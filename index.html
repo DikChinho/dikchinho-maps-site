@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#123b32">
+  <title>DikChinho Maps | Savar</title>
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    :root {
+      --green: #123b32;
+      --gold: #e5b957;
+      --paper: #f7f8f4;
+      --ink: #1c2b27;
+      --muted: #64736c;
+      --border: #dce3dc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    header {
+      background: var(--green);
+      color: white;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .logo {
+      width: 42px; height: 42px; border-radius: 14px;
+      background: var(--gold); color: var(--green);
+      display: grid; place-items: center;
+      font-size: 23px; font-weight: 800;
+    }
+    h1 { margin: 0; font-size: 21px; letter-spacing: -.5px; }
+    .tagline { font-size: 12px; opacity: .8; margin-top: 3px; }
+    .area {
+      font-size: 13px; border: 1px solid #ffffff55;
+      border-radius: 20px; padding: 8px 12px;
+    }
+    main { max-width: 1200px; margin: auto; padding: 18px; }
+    .intro { margin: 2px 0 16px; }
+    .intro h2 { margin: 0 0 6px; font-size: 23px; }
+    .intro p { margin: 0; color: var(--muted); font-size: 14px; }
+    .search {
+      display: flex; gap: 8px; margin: 16px 0 12px;
+    }
+    input, textarea {
+      width: 100%; min-width: 0; padding: 12px;
+      border: 1px solid var(--border); border-radius: 10px;
+      font: inherit; background: white; color: var(--ink);
+    }
+    button {
+      border: 0; border-radius: 10px; padding: 12px 15px;
+      background: var(--green); color: white;
+      font: inherit; font-weight: 650; cursor: pointer;
+    }
+    button.secondary {
+      background: white; color: var(--green);
+      border: 1px solid var(--border);
+    }
+    button:focus-visible, input:focus-visible, textarea:focus-visible {
+      outline: 3px solid var(--gold); outline-offset: 2px;
+    }
+    .map-wrap {
+      position: relative; overflow: hidden; border-radius: 16px;
+      border: 1px solid var(--border); background: #e6ece5;
+      box-shadow: 0 4px 18px #163b3210;
+    }
+    #map { height: min(62vh, 590px); min-height: 340px; width: 100%; }
+    .map-label {
+      position: absolute; z-index: 500; top: 12px; left: 12px;
+      background: white; border-radius: 9px; padding: 8px 11px;
+      font-size: 12px; box-shadow: 0 1px 8px #0002;
+    }
+    .tools {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-top: 14px;
+    }
+    .tool {
+      padding: 15px; background: white;
+      border: 1px solid var(--border); border-radius: 13px;
+    }
+    .tool strong { display: block; margin-bottom: 5px; font-size: 14px; }
+    .tool p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .notice {
+      margin-top: 14px; padding: 12px 14px;
+      background: #fff7df; border: 1px solid #f1dfaa;
+      border-radius: 10px; font-size: 12px; line-height: 1.6;
+    }
+    .status { min-height: 24px; margin: 8px 0; font-size: 13px; color: var(--muted); }
+    footer { text-align: center; padding: 22px 12px; color: var(--muted); font-size: 12px; }
+    .leaflet-popup-content { line-height: 1.6; }
+    @media (max-width: 620px) {
+      header { padding: 15px; }
+      main { padding: 13px; }
+      .intro h2 { font-size: 21px; }
+      .search { flex-wrap: wrap; }
+      .search input { flex: 1 1 100%; }
+      .search button { flex: 1; }
+      .tools { grid-template-columns: 1fr; }
+      #map { height: 55vh; min-height: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">দ</div>
+      <div>
+        <h1>DikChinho Maps</h1>
+        <div class="tagline">Find your way. Know your place.</div>
+      </div>
+    </div>
+    <div class="area">● Starting in Savar, Bangladesh</div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <h2>Explore your surroundings</h2>
+      <p>Discover places, explore roads, and help improve local map information.</p>
+    </section>
+
+    <form id="searchForm" class="search">
+      <input id="searchInput" type="search"
+        placeholder="Search a place or address…"
+        aria-label="Search a place or address">
+      <button type="submit" id="searchButton">Search</button>
+      <button type="button" class="secondary" id="resetButton">Reset map</button>
+    </form>
+    <div id="status" class="status" role="status" aria-live="polite">
+      Map centered on Savar. Select the map to inspect a location.
+    </div>
+
+    <div class="map-wrap">
+      <div class="map-label">Savar · Bangladesh</div>
+      <div id="map" aria-label="Interactive map of Savar"></div>
+    </div>
+
+    <section class="tools">
+      <div class="tool">
+        <strong>Explore the map</strong>
+        <p>Move around the map and zoom in to inspect roads and nearby places.</p>
+      </div>
+      <div class="tool">
+        <strong>Find a location</strong>
+        <p>Search for a place or address. Search results depend on available map data.</p>
+      </div>
+      <div class="tool">
+        <strong>Report a map issue</strong>
+        <p>Select a location on the map to prepare a report with its coordinates.</p>
+      </div>
+    </section>
+
+    <section class="tool" style="margin-top:14px">
+      <strong>Report an incorrect or missing location</strong>
+      <p id="selectedLocation">First, tap a location on the map.</p>
+      <form id="reportForm" style="margin-top:12px">
+        <textarea id="reportText" rows="3" maxlength="1000"
+          placeholder="Describe the missing place or map issue…"
+          aria-label="Describe a map issue"></textarea>
+        <button type="submit" style="margin-top:10px">Prepare report</button>
+      </form>
+      <p id="reportStatus" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <div class="notice">
+      <strong>Prototype notice:</strong> This is an early demonstration.
+      Search uses a public geocoding service and is intended only for limited
+      testing. Reports are not uploaded or saved to a server yet. Production
+      deployment requires a suitable search provider, usage-policy review,
+      and a secure backend for submitting reports.
+    </div>
+  </main>
+
+  <footer>
+    DikChinho Maps · Savar-first mapping project<br>
+    Map data © OpenStreetMap contributors
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const savar = [23.8433, 90.2517];
+    const map = L.map("map").setView(savar, 13);
+
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    }).addTo(map);
+
+    const status = document.getElementById("status");
+    const selectedLocation = document.getElementById("selectedLocation");
+    const reportStatus = document.getElementById("reportStatus");
+    let selectedPoint = null;
+    let selectedMarker = null;
+    let resultMarker = null;
+    let lastSearchAt = 0;
+
+    map.on("click", function (event) {
+      selectedPoint = event.latlng;
+      if (selectedMarker) map.removeLayer(selectedMarker);
+
+      selectedMarker = L.marker(selectedPoint).addTo(map)
+        .bindPopup("Selected report location").openPopup();
+
+      const lat = selectedPoint.lat.toFixed(6);
+      const lng = selectedPoint.lng.toFixed(6);
+      selectedLocation.textContent = "Selected coordinates: " + lat + ", " + lng;
+      status.textContent = "Location selected. You can now prepare a map report.";
+      reportStatus.textContent = "";
+    });
+
+    document.getElementById("searchForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const query = document.getElementById("searchInput").value.trim();
+      if (!query) {
+        status.textContent = "Enter a place name or address first.";
+        return;
+      }
+
+      // This simple prototype avoids autocomplete and limits search frequency.
+      const wait = 1100 - (Date.now() - lastSearchAt);
+      if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
+      lastSearchAt = Date.now();
+
+      const button = document.getElementById("searchButton");
+      button.disabled = true;
+      status.textContent = "Searching…";
+
+      try {
+        const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q="
+          + encodeURIComponent(query + ", Bangladesh");
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Search service unavailable");
+
+        const results = await response.json();
+        if (!results.length) {
+          status.textContent = "No results found. Try another spelling or nearby landmark.";
+          return;
+        }
+
+        const first = results[0];
+        const point = [Number(first.lat), Number(first.lon)];
+        map.setView(point, 16);
+
+        if (resultMarker) map.removeLayer(resultMarker);
+        resultMarker = L.marker(point).addTo(map)
+          .bindPopup("<strong>Search result</strong><br>" +
+            escapeHtml(first.display_name)).openPopup();
+
+        status.textContent = "Showing the best matching result. Review its position before relying on it.";
+      } catch (error) {
+        status.textContent =
+          "Search could not be completed. The map itself may still be used; try again later.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    document.getElementById("resetButton").addEventListener("click", function () {
+      map.setView(savar, 13);
+      document.getElementById("searchInput").value = "";
+      status.textContent = "Map reset to Savar.";
+    });
+
+    document.getElementById("reportForm").addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!selectedPoint) {
+        reportStatus.textContent = "Select a location on the map first.";
+        return;
+      }
+
+      const description = document.getElementById("reportText").value.trim();
+      if (!description) {
+        reportStatus.textContent = "Please describe the map issue.";
+        return;
+      }
+
+      const message = [
+        "DikChinho Maps issue report",
+        "Latitude: " + selectedPoint.lat.toFixed(6),
+        "Longitude: " + selectedPoint.lng.toFixed(6),
+        "Description: " + description
+      ].join("\n");
+
+      // No backend is connected yet; let the user copy the prepared report.
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(message).then(function () {
+          reportStatus.textContent =
+            "Report text copied. It has not been submitted to DikChinho.";
+        }).catch(function () {
+          window.prompt("Copy this report text:", message);
+        });
+      } else {
+        window.prompt("Copy this report text:", message);
+      }
+    });
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, function (char) {
+        return {
+          "&": "&amp;", "<": "&lt;", ">": "&gt;",
+          '"': "&quot;", "'": "&#39;"
+        }[char];
+      });
+    }
+  </script>
+</body>
+</html>
