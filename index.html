@@ -1,763 +1,199 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#123b32">
-  <title>DikChinho Maps | Savar</title>
-  <link rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap');
-    :root {
-      --green: #123c35;
-      --green-deep: #0b2925;
-      --green-soft: #e8f2ed;
-      --gold: #e7b85b;
-      --paper: #f4f6f4;
-      --surface: #ffffff;
-      --ink: #172923;
-      --muted: #718079;
-      --border: #e1e8e3;
-      --shadow: 0 16px 48px rgba(20, 49, 39, .08);
-    }
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0; color: var(--ink); background: var(--paper);
-      font-family: 'DM Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
-    header {
-      min-height: 82px; padding: 16px clamp(18px, 4vw, 56px);
-      background: var(--green-deep); color: white; display: flex;
-      align-items: center; justify-content: space-between; gap: 18px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-    .brand { display: flex; align-items: center; gap: 13px; }
-    .logo {
-      width: 46px; height: 46px; flex: 0 0 46px; border-radius: 15px;
-      background: var(--gold); color: var(--green-deep);
-      display: grid; place-items: center; font-size: 25px; font-weight: 800;
-      box-shadow: 0 5px 16px rgba(231,184,91,.18);
-    }
-    h1 { margin: 0; font-family: Manrope, sans-serif; font-size: 20px; font-weight: 800; letter-spacing: -.65px; }
-    .tagline { font-size: 12px; color: #c4d4ce; margin-top: 3px; letter-spacing: .15px; }
-    .area {
-      display: inline-flex; align-items: center; gap: 9px; font-size: 12px;
-      font-weight: 600; color: #e7eee9; border: 1px solid #ffffff25;
-      background: #ffffff0b; border-radius: 999px; padding: 10px 14px;
-    }
-    .area::first-letter { color: var(--gold); }
-    main { max-width: 1440px; margin: 0 auto; padding: clamp(22px, 3vw, 42px) clamp(16px, 3vw, 42px) 32px; }
-    .intro { margin: 0 0 25px; }
-    .intro h2 {
-      margin: 0 0 8px; font: 800 clamp(26px, 3vw, 36px)/1.15 Manrope, sans-serif;
-      letter-spacing: -1.2px; color: #16372f;
-    }
-    .intro p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.65; }
-    .search {
-      display: flex; align-items: center; gap: 8px; margin: 0 0 14px;
-      padding: 7px; max-width: 1040px; min-height: 70px;
-      border: 1px solid #dce6df; border-radius: 17px;
-      background: #fff; box-shadow: 0 8px 28px rgba(21, 55, 42, .075);
-      transition: border-color .18s, box-shadow .18s;
-    }
-    .search:focus-within {
-      border-color: #86ad99;
-      box-shadow: 0 0 0 4px rgba(66, 128, 96, .10), 0 8px 28px rgba(21, 55, 42, .075);
-    }
-    .search-icon {
-      flex: 0 0 44px; width: 44px; height: 44px; margin-left: 2px;
-      display: grid; place-items: center; color: #5c796b;
-      background: #f0f5f1; border-radius: 12px;
-    }
-    .search-icon svg { width: 20px; height: 20px; display: block; }
-    .search-field { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-    .search-label { color: #718279; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
-    .search input {
-      width: 100%; min-width: 0; padding: 3px 0; border: 0; border-radius: 0;
-      background: transparent; box-shadow: none; outline: none;
-      color: var(--ink); font-size: 15px; font-weight: 500;
-    }
-    .search input:focus { border: 0; box-shadow: none; background: transparent; }
-    .search input::placeholder { color: #9aa79f; font-weight: 400; }
-    .search .search-submit {
-      min-height: 52px; padding: 0 22px; border-radius: 12px;
-      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-      font-size: 13px; box-shadow: 0 4px 10px rgba(18,60,53,.13);
-    }
-    .search .search-submit svg { width: 17px; height: 17px; }
-    .search .search-reset { min-height: 48px; padding: 0 15px; border-radius: 11px; font-size: 12px; }
-    input, textarea {
-      width: 100%; min-width: 0; padding: 13px 15px;
-      border: 1px solid var(--border); border-radius: 11px;
-      font: inherit; font-size: 14px; background: #fbfcfb; color: var(--ink);
-      transition: border-color .18s, box-shadow .18s, background .18s;
-    }
-    input:focus, textarea:focus { background: #fff; border-color: #6b9d89; box-shadow: 0 0 0 4px #dcece4; outline: 0; }
-    input::placeholder { color: #98a49e; }
-    button {
-      border: 1px solid transparent; border-radius: 11px; padding: 12px 17px;
-      background: var(--green); color: white; font: inherit; font-size: 13px;
-      font-weight: 700; cursor: pointer; white-space: nowrap;
-      transition: transform .16s, background .16s, box-shadow .16s, border-color .16s;
-    }
-    button:hover:not(:disabled) { background: #1b594b; box-shadow: 0 5px 13px #123c3520; transform: translateY(-1px); }
-    button:active:not(:disabled) { transform: translateY(0); }
-    button:disabled { cursor: wait; opacity: .65; }
-    button.secondary {
-      background: white; color: #345349; border-color: var(--border); box-shadow: none;
-    }
-    button.secondary:hover:not(:disabled) { background: #f4f8f5; border-color: #b9cdc1; }
-    button:focus-visible, input:focus-visible, textarea:focus-visible {
-      outline: 3px solid #e7b85b; outline-offset: 2px;
-    }
-    .search-results { display: grid; gap: 8px; margin: 8px 0 12px; }
-    .search-result {
-      width: 100%; text-align: left; background: white; color: var(--ink);
-      border: 1px solid var(--border); font-weight: 600; line-height: 1.45;
-      white-space: normal;
-    }
-    .search-result small { display: block; margin-top: 4px; color: var(--muted); font-weight: 400; }
-    .status {
-      min-height: 40px; display: flex; align-items: center; margin: 12px 0;
-      padding: 10px 13px; border: 1px solid #e3ebe5; border-radius: 10px;
-      background: #edf4ef; color: #456257; font-size: 12px; line-height: 1.5;
-    }
-    .map-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 16px 0 12px; }
-    .map-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
-    .map-actions button[aria-pressed="true"] { background: #b88622; color: #172e27; }
-    .map-wrap {
-      position: relative; overflow: hidden; border-radius: 20px;
-      border: 1px solid #d7e0d9; background: #e6ece5;
-      box-shadow: var(--shadow);
-    }
-    #map { height: min(68vh, 720px); min-height: 430px; width: 100%; }
-    .map-label {
-      position: absolute; z-index: 500; top: 16px; left: 16px;
-      display: inline-flex; align-items: center; gap: 8px;
-      background: rgba(255,255,255,.96); color: #244b3e;
-      border: 1px solid #e5ebe6; border-radius: 10px; padding: 10px 13px;
-      font-size: 12px; font-weight: 700; box-shadow: 0 5px 18px #17292318;
-      backdrop-filter: blur(8px);
-    }
-    .map-label::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: #39a779; box-shadow: 0 0 0 4px #dff3e8; }
-    .map-credit {
-      display: block; margin: 10px 2px 0; padding: 0; background: transparent;
-      color: #75837c; font-size: 10px; line-height: 1.5;
-    }
-    .map-credit a { color: #476d5b; }
-    .leaflet-control-zoom { border: 0 !important; box-shadow: 0 4px 15px #17292320 !important; }
-    .leaflet-control-zoom a {
-      color: var(--green) !important; border-color: #e3e9e4 !important;
-      width: 34px !important; height: 34px !important; line-height: 34px !important;
-    }
-    .leaflet-control-attribution { display: none !important; }
-    .route-panel {
-      display: none; margin: 18px 0 0; padding: 22px;
-      background: white; border: 1px solid var(--border);
-      border-radius: 16px; box-shadow: 0 8px 24px #163b3210;
-    }
-    .route-panel.visible { display: block; }
-    .route-summary { font: 800 17px Manrope, sans-serif; margin-bottom: 13px; color: #173c31; }
-    .route-steps { margin: 0; padding-left: 24px; }
-    .route-steps li { padding: 10px 7px; line-height: 1.55; border-bottom: 1px solid #edf1ee; font-size: 13px; }
-    .route-steps li:last-child { border-bottom: 0; }
-    .route-steps li::marker { color: #2b765d; font-weight: 800; }
-    footer { text-align: center; padding: 25px 16px; color: #7b8982; font-size: 11px; border-top: 1px solid #e3e9e4; background: #f8faf8; }
-    .leaflet-popup-content { line-height: 1.6; font-family: 'DM Sans', sans-serif; }
-    .leaflet-popup-content-wrapper { border-radius: 12px; }
-    @media (min-width: 900px) {
-      .search { max-width: 1040px; }
-      .status { max-width: 1040px; }
-    }
-    @media (max-width: 620px) {
-      header { padding: 14px 16px; min-height: 72px; }
-      .logo { width: 40px; height: 40px; flex-basis: 40px; border-radius: 13px; font-size: 22px; }
-      h1 { font-size: 17px; }
-      .tagline { font-size: 10px; }
-      .area { padding: 8px 10px; font-size: 10px; }
-      main { padding: 25px 13px 26px; }
-      .intro { margin-bottom: 19px; }
-      .intro h2 { font-size: 27px; }
-      .intro p { font-size: 13px; }
-      .search { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; padding: 9px; border-radius: 15px; }
-      .search-icon { width: 40px; height: 40px; flex-basis: 40px; margin-left: 0; }
-      .search-field { align-self: center; }
-      .search-label { font-size: 9px; }
-      .search input { font-size: 14px; }
-      .search .search-submit { grid-column: 1 / -1; min-height: 46px; width: 100%; }
-      .search .search-reset { grid-column: 1 / -1; min-height: 40px; width: 100%; }
-      .map-actions { gap: 7px; }
-      .map-actions button { flex: 1 1 auto; padding: 11px 10px; font-size: 12px; }
-      .map-wrap { border-radius: 15px; }
-      #map { height: 65vh; min-height: 390px; }
-      .map-label { top: 11px; left: 11px; padding: 8px 10px; font-size: 11px; }
-      .route-panel { padding: 15px; border-radius: 13px; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
-    }
-
-    .route-planner {
-      display: none; margin: 0 0 18px; padding: 20px;
-      border: 1px solid #dce7df; border-radius: 17px;
-      background: #fff; box-shadow: 0 8px 28px rgba(21,55,42,.055);
-    }
-    .route-planner.visible { display: block; }
-    .planner-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 17px; }
-    .planner-icon {
-      display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px;
-      border-radius: 13px; background: #e8f2ed; color: #245b48; font-size: 23px; font-weight: 700;
-    }
-    .planner-heading h3 { margin: 0 0 4px; font: 800 17px Manrope, sans-serif; color: #183b30; }
-    .planner-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .route-form { display: grid; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr) auto; gap: 10px; align-items: end; }
-    .route-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-    .route-field > span { color: #718279; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
-    .route-field input { min-height: 48px; padding: 12px; border-radius: 10px; background: #fbfcfb; }
-    .route-connector { height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
-    .route-connector span:first-child { width: 8px; height: 8px; border: 2px solid #2b8061; border-radius: 50%; }
-    .route-connector span:last-child { height: 17px; border-left: 2px dashed #b8c9be; }
-    .route-submit { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 0 18px; }
-    .planner-note { margin: 13px 0 0; color: #89958e; font-size: 11px; line-height: 1.5; }
-
-    /* Polished interface refresh */
-    :root {
-      --green: #123d32;
-      --green-deep: #092720;
-      --green-soft: #e7f3ec;
-      --gold: #edc66f;
-      --paper: #f2f5f2;
-      --ink: #182a23;
-      --muted: #6d7e74;
-      --border: #dfe8e1;
-      --shadow: 0 20px 55px rgba(18, 50, 38, .11);
-    }
-    body { background: #f2f5f2; }
-    header {
-      min-height: 88px; padding-inline: clamp(18px, 5vw, 76px);
-      background: linear-gradient(112deg, #092720 0%, #123d32 58%, #1d5140 100%);
-      box-shadow: 0 5px 22px #09272018;
-    }
-    .logo { border-radius: 14px; background: linear-gradient(145deg,#f4d78c,#e5b64f); }
-    .area { background: #ffffff10; border-color: #ffffff26; }
-    main { max-width: 1560px; padding: clamp(20px, 3vw, 38px) clamp(14px, 3.2vw, 48px) 42px; }
-    .intro {
-      position: relative; isolation: isolate; overflow: hidden;
-      padding: clamp(24px, 3.6vw, 42px); margin-bottom: 22px;
-      border-radius: 24px; color: white;
-      background: radial-gradient(ellipse at 88% 15%, #397b5b 0, transparent 34%),
-                  linear-gradient(118deg, #0b2d25 0%, #174a39 68%, #1b5b43 100%);
-      box-shadow: 0 18px 42px #123c351f;
-    }
-    .intro::after {
-      content: "↗"; position: absolute; z-index: -1; right: 5%; top: -45px;
-      color: #ffffff0b; font: 800 clamp(150px, 24vw, 290px)/1 Manrope, sans-serif;
-      transform: rotate(-12deg); pointer-events: none;
-    }
-    .intro h2 { color: #fff; font-size: clamp(29px, 3.7vw, 45px); letter-spacing: -1.7px; max-width: 680px; }
-    .intro p { color: #d0e1d7; font-size: 14px; max-width: 620px; }
-    .search {
-      max-width: none; min-height: 78px; margin-bottom: 12px; padding: 9px;
-      border-radius: 18px; border-color: #d9e5dc; box-shadow: 0 9px 28px #163c2b0c;
-    }
-    .search-icon { background: #e9f3ec; color: #245b46; }
-    .search .search-submit { padding-inline: 25px; background: #174a39; }
-    .search .search-reset { padding-inline: 18px; }
-    .status {
-      max-width: none; min-height: 43px; margin: 12px 0 16px;
-      padding: 11px 15px; background: #eaf3ed; border-color: #d8e7dc;
-      color: #365b48; border-radius: 12px;
-    }
-    .map-actions { gap: 10px; margin: 17px 0 14px; }
-    .map-actions button {
-      min-height: 44px; padding: 0 17px; border-radius: 12px;
-      box-shadow: 0 4px 12px #143c2d0c;
-    }
-    .map-actions button.secondary { background: #fff; }
-    .map-wrap {
-      border-radius: 22px; border: 1px solid #d5e1d8;
-      box-shadow: 0 18px 45px #143b2d16; background: #e4ece6;
-    }
-    #map { height: min(72vh, 780px); min-height: 470px; }
-    .map-label {
-      top: 17px; left: 17px; padding: 11px 15px;
-      border-radius: 12px; box-shadow: 0 6px 22px #102d201a;
-    }
-    .leaflet-control-zoom { margin: 17px !important; border-radius: 12px !important; overflow: hidden; }
-    .leaflet-control-zoom a:first-child { border-radius: 0 !important; }
-    .leaflet-control-zoom a:last-child { border-radius: 0 !important; }
-    .route-planner, .route-panel {
-      border-color: #dce7df; border-radius: 18px;
-      box-shadow: 0 12px 32px #163b3210;
-    }
-    .route-planner { padding: clamp(17px, 2.5vw, 27px); }
-    .planner-icon { background: #e8f3eb; border: 1px solid #d9e9de; }
-    .route-field input { background: #f8faf8; }
-    .route-submit { border-radius: 11px; }
-    .search-result { border-radius: 12px; padding: 14px 16px; box-shadow: 0 3px 10px #183d2b08; }
-    .search-result:hover { border-color: #9dbdac; background: #f7fbf8; }
-    .map-credit { margin: 12px 4px 0; font-size: 11px; }
-    footer { margin-top: 14px; background: #f8faf8; }
-    @media (max-width: 620px) {
-      header { padding: 13px 14px; }
-      .area { max-width: 125px; line-height: 1.4; white-space: normal; }
-      main { padding: 19px 12px 28px; }
-      .intro { padding: 25px 21px; border-radius: 19px; }
-      .intro h2 { font-size: 29px; }
-      .search { min-height: 0; }
-      .search .search-submit { min-height: 47px; }
-      .map-actions button { border-radius: 11px; }
-      .map-wrap { border-radius: 16px; }
-      #map { height: 62vh; min-height: 390px; }
-      .leaflet-control-zoom { margin: 10px !important; }
-    }
-
-    @media (max-width: 760px) {
-      .route-planner { padding: 15px; }
-      .route-form { grid-template-columns: minmax(0,1fr); gap: 10px; }
-      .route-connector { display: none; }
-      .route-submit { width: 100%; }
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#123b32">
+<meta name="description" content="DikChinho Maps: find places, plan routes and navigate with Bangla and English turn-by-turn directions. Starting in Savar, Bangladesh.">
+<title>DikChinho Maps | Savar</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 256 256%22%3E%3Crect width=%22256%22 height=%22256%22 rx=%2258%22 fill=%22%23123b32%22/%3E%3Ccircle cx=%22128%22 cy=%22128%22 r=%2296%22 fill=%22none%22 stroke=%22%231d5a4b%22 stroke-width=%223%22/%3E%3Ccircle cx=%22128%22 cy=%22128%22 r=%2264%22 fill=%22none%22 stroke=%22%231d5a4b%22 stroke-width=%223%22/%3E%3Cpath d=%22M44 206C76 176 98 216 128 194%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%229%22 stroke-linecap=%22round%22 stroke-dasharray=%221 17%22/%3E%3Cpath d=%22M128 198C128 198 74 146 74 104a54 54 0 1 1 108 0c0 42-54 94-54 94z%22 fill=%22%23f2b134%22/%3E%3Ccircle cx=%22128%22 cy=%22104%22 r=%2224%22 fill=%22%23123b32%22/%3E%3Cpath d=%22M128 88l11 24-11-6-11 6z%22 fill=%22%23fff%22/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap">
+<style>
+:root{--g:#123b32;--gold:#f2b134;--bg:#fff;--ink:#14231f;--mute:#5e726b;--line:#dbe5e1;--chip:#e8f0ed;--bad:#d2402f}
+@media(prefers-color-scheme:dark){:root{--bg:#10211c;--ink:#e6f1ed;--mute:#97b0a7;--line:#25423a;--chip:#1a342d}}
+html,body{height:100%;margin:0}
+body{font:15px/1.45 "Hind Siliguri",system-ui,sans-serif;color:var(--ink);background:var(--g)}
+button,input{font:inherit;color:inherit}
+#map{position:fixed;inset:0}
+#ui{position:fixed;z-index:1100;left:0;top:0;bottom:0;width:380px;background:var(--bg);display:flex;flex-direction:column;box-shadow:0 0 24px rgba(0,0,0,.3)}
+.head{background:var(--g);color:#fff;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;display:flex;align-items:center;gap:12px}
+.logo{width:44px;height:44px;flex:none}
+.head h1{margin:0;font-size:19px;line-height:1.1}.head p{margin:0;font-size:12.5px;opacity:.8}
+.head div:nth-child(2){flex:1}
+.lang{background:rgba(255,255,255,.15);border:0;color:#fff;border-radius:8px;padding:5px 11px;cursor:pointer}
+.body{overflow:auto;padding:12px 14px calc(14px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:8px}
+input{flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:var(--chip);font-weight:600}
+.pri{background:var(--gold);color:var(--g);font-weight:700;font-size:16px;padding:13px;width:100%}
+.pri:disabled{opacity:.4;cursor:default}.danger{background:var(--bad);color:#fff}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.modes button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 2px;cursor:pointer}
+.modes button.on{background:var(--g);color:#fff;border-color:var(--g);font-weight:600}
+.res{border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.res span{flex:1;font-size:14px}.res small{display:block;color:var(--mute);font-size:12px}
+.res button{background:var(--chip);border:0;border-radius:8px;padding:4px 9px;cursor:pointer;font-size:12px}
+.sum{font-size:14px;color:var(--mute);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.sum b{color:var(--ink)}
+.card{border:1px solid var(--line);border-radius:12px;padding:9px 12px;cursor:pointer;margin-bottom:6px}
+.card.sel{border:2px solid var(--g);padding:8px 11px}
+.card em{font-style:normal;display:block;font-size:12px;color:var(--mute)}.card b{font-size:18px}
+ol{margin:0;padding:0;list-style:none}
+ol li{display:grid;grid-template-columns:28px 1fr auto;gap:6px;padding:7px 0;border-bottom:1px solid var(--line);font-size:14px}
+ol li i{font-style:normal;font-size:18px;color:var(--g)}ol li u{text-decoration:none;color:var(--mute);font-size:13px}
+@media(prefers-color-scheme:dark){ol li i,.modes button.on{color:var(--gold)}.modes button.on{background:#1f5a4b}}
+h2{font-size:15px;margin:2px 0}.note{color:var(--mute);font-size:12.5px;margin:0}
+.nav-only{display:none;flex-direction:column;gap:10px}
+.navmode .nav-only{display:flex}.navmode .hide-nav{display:none}.navmode #ui{bottom:auto}
+#banner{position:fixed;z-index:1200;left:392px;right:60px;top:12px;background:var(--g);color:#fff;border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:52px 1fr;gap:4px 10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+#banner[hidden]{display:none}
+#bg{font-size:40px;line-height:1;text-align:center;color:var(--gold)}#bd{font-size:26px;font-weight:700;line-height:1.1}#bt{font-size:15px}
+#br{grid-column:1/3;font-size:13px;opacity:.85;border-top:1px solid rgba(255,255,255,.25);padding-top:6px}
+#toast{position:fixed;z-index:1300;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#000c;color:#fff;padding:8px 14px;border-radius:10px;max-width:80%;text-align:center;font-size:14px}
+#toast[hidden]{display:none}
+@media(max-width:760px){#ui{top:auto;right:0;width:auto;max-height:42vh;border-radius:16px 16px 0 0}.navmode #ui{max-height:30vh}#banner{left:10px}.head{padding-top:12px}}
+.head h1 span{font-weight:400;opacity:.85}
+#ui{transition:transform .25s}
+#tog{position:fixed;z-index:1200;left:392px;top:12px;width:40px;height:40px;border-radius:10px;border:0;background:var(--bg);color:var(--ink);box-shadow:0 2px 10px rgba(0,0,0,.3);cursor:pointer;font-size:18px;transition:left .25s}
+.fab{position:fixed;z-index:1200;right:10px;top:84px;display:grid;gap:6px}
+.fab button{width:38px;height:38px;border-radius:8px;border:0;background:var(--bg);color:var(--ink);box-shadow:0 1px 6px rgba(0,0,0,.35);cursor:pointer;font-size:18px}
+body.closed #ui{transform:translateX(-104%)}body.closed #tog{left:12px}.navmode #tog{display:none}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--bg);color:var(--ink)}
+.leaflet-popup-content{font-family:inherit;margin:12px 14px;min-width:170px}
+@media(max-width:760px){#tog,body.closed #tog{left:10px}body.closed #ui{transform:translateY(104%)}}
+</style>
 </head>
 <body>
-  <header>
-    <div class="brand">
-      <div class="logo" aria-hidden="true">দ</div>
-      <div>
-        <h1>DikChinho Maps</h1>
-        <div class="tagline">Find your way. Know your place.</div>
-      </div>
-    </div>
-    <div class="area">● Starting in Savar, Bangladesh</div>
-  </header>
-
-  <main>
-    <section class="intro">
-      <h2>Navigate with confidence</h2>
-      <p>Search for a place, locate yourself, and plan a driving route.</p>
-    </section>
-
-    <form id="searchForm" class="search" role="search">
-      <div class="search-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg>
-      </div>
-      <div class="search-field">
-        <label class="search-label" for="searchInput">Explore places</label>
-        <input id="searchInput" type="search"
-          placeholder="Search an address, landmark or area"
-          aria-label="Search a place or address"
-          autocomplete="off">
-      </div>
-      <button type="submit" id="searchButton" class="search-submit">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg>
-        <span>Search</span>
-      </button>
-      <button type="button" class="secondary search-reset" id="resetButton">Reset map</button>
-    </form>
-    <div id="searchResults" class="search-results" aria-label="Search results"></div>
-    <div id="status" class="status" role="status" aria-live="polite">
-      Map centered on Savar. Select the map to inspect a location.
-    </div>
-
-    <div class="map-actions" aria-label="Map tools">
-      <button type="button" id="locateButton">◎ My location</button>
-      <button type="button" id="routeButton" aria-expanded="false" aria-controls="routePlanner">↗ Plan a route</button>
-      <button type="button" class="secondary" id="clearRouteButton">Clear route</button>
-    </div>
-    <section id="routePlanner" class="route-planner" aria-label="Plan a driving route">
-      <div class="planner-heading">
-        <div class="planner-icon" aria-hidden="true">↗</div>
-        <div><h3>Plan your journey</h3><p>Enter places by name or address. No need to select points on the map.</p></div>
-      </div>
-      <form id="routeForm" class="route-form">
-        <label class="route-field"><span>FROM</span><input id="routeStartInput" type="text" placeholder="Starting place, e.g. Savar Bus Stand" autocomplete="street-address" required></label>
-        <div class="route-connector" aria-hidden="true"><span></span><span></span></div>
-        <label class="route-field"><span>TO</span><input id="routeEndInput" type="text" placeholder="Destination, e.g. National Martyrs’ Memorial" autocomplete="street-address" required></label>
-        <button id="routeSubmitButton" class="route-submit" type="submit">Find route <span aria-hidden="true">→</span></button>
-      </form>
-      <p class="planner-note">Place search is based on OpenStreetMap data. Check that the selected locations match your intended journey.</p>
-    </section>
-
-    <div class="map-wrap">
-      <div class="map-label">Savar · Bangladesh</div>
-      <div id="map" aria-label="Interactive map of Savar"></div>
-    </div>
-    <div class="map-credit">
-      Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
-    </div>
-    <section id="routePanel" class="route-panel" aria-live="polite">
-      <div id="routeSummary" class="route-summary">Driving directions</div>
-      <ol id="routeSteps" class="route-steps"></ol>
-    </section>
-  </main>
-
-  <footer>DikChinho Maps · Find your way. Know your place.</footer>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script>
-    const savar = [23.8433, 90.2517];
-    // Keep the initial map focused on Bangladesh and prevent zooming out to the whole world.
-    const bangladeshBounds = L.latLngBounds(
-      L.latLng(20.55, 88.00),
-      L.latLng(26.75, 92.75)
-    );
-    const map = L.map("map", {
-      minZoom: 7,
-      maxZoom: 19,
-      maxBounds: bangladeshBounds,
-      maxBoundsViscosity: 0.8,
-      zoomControl: false,
-      attributionControl: false,
-      preferCanvas: true
-    }).setView(savar, 13);
-    L.control.zoom({ position: "topright" }).addTo(map);
-
-    // OpenStreetMap tiles: no CARTO API key is required.
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-    }).addTo(map);
-
-    const status = document.getElementById("status");
-    const searchResults = document.getElementById("searchResults");
-    const routePanel = document.getElementById("routePanel");
-    const routeSummary = document.getElementById("routeSummary");
-    const routeSteps = document.getElementById("routeSteps");
-    let selectedMarker = null;
-    let resultMarker = null;
-    let lastSearchAt = 0;
-    let routeMode = false;
-    let routePoints = [];
-    let routeMarkers = [];
-    let routeLine = null;
-    let locationWatchId = null;
-    let bestLocationAccuracy = Infinity;
-    let locationStartedAt = 0;
-
-    document.getElementById("locateButton").addEventListener("click", function () {
-      if (!window.isSecureContext) {
-        status.textContent = "Location needs a secure HTTPS connection. Open the official GitHub Pages link.";
-        return;
-      }
-      if (!navigator.geolocation) {
-        status.textContent = "This browser does not support location access. Try an updated browser.";
-        return;
-      }
-
-      const locateButton = document.getElementById("locateButton");
-      if (locationWatchId !== null) {
-        navigator.geolocation.clearWatch(locationWatchId);
-        locationWatchId = null;
-        locateButton.textContent = "◎ Improve location";
-        locateButton.disabled = false;
-        status.textContent = "Location search stopped. The last position remains selected.";
-        return;
-      }
-
-      bestLocationAccuracy = Infinity;
-      locationStartedAt = Date.now();
-      locateButton.textContent = "Stop location search";
-      locateButton.disabled = false;
-      status.textContent = "Finding a better position… Keep location services on and, if possible, move near a window.";
-
-      function finishLocationSearch(message) {
-        if (locationWatchId !== null) {
-          navigator.geolocation.clearWatch(locationWatchId);
-          locationWatchId = null;
-        }
-        locateButton.textContent = "◎ Improve location";
-        locateButton.disabled = false;
-        if (message) status.textContent = message;
-      }
-
-      locationWatchId = navigator.geolocation.watchPosition(function (position) {
-        const accuracy = position.coords.accuracy;
-        // Keep the most accurate reading received during this short search.
-        if (accuracy >= bestLocationAccuracy) {
-          if (Date.now() - locationStartedAt > 25000) {
-            finishLocationSearch("Best available accuracy is about " +
-              Math.round(bestLocationAccuracy) + " m. Your device may only provide an approximate location.");
-          }
-          return;
-        }
-
-        bestLocationAccuracy = accuracy;
-        const point = [position.coords.latitude, position.coords.longitude];
-        if (resultMarker) map.removeLayer(resultMarker);
-        resultMarker = L.marker(point).addTo(map)
-          .bindPopup("Your current location · accuracy about " + Math.round(accuracy) + " m");
-        if (selectedMarker) map.removeLayer(selectedMarker);
-        selectedMarker = L.circleMarker(point, {
-          radius: 8, color: "#ffffff", weight: 3,
-          fillColor: "#1674d1", fillOpacity: 1
-        }).addTo(map);
-        // Zoom in moderately; a high zoom does not make an inaccurate reading precise.
-        map.setView(point, accuracy <= 30 ? 17 : 15);
-        status.textContent = "Current location updated. Estimated accuracy: ±" +
-          Math.round(accuracy) + " m. Looking for a better reading for up to 25 seconds…";
-
-        if (accuracy <= 25) {
-          finishLocationSearch("Good location reading received (estimated accuracy ±" +
-            Math.round(accuracy) + " m).");
-        } else if (Date.now() - locationStartedAt > 25000) {
-          finishLocationSearch("Best available accuracy is about ±" +
-            Math.round(bestLocationAccuracy) + " m. Your device or network may limit precision.");
-        }
-      }, function (error) {
-        if (error.code === 1) {
-          finishLocationSearch("Location permission was denied. Allow Location in the browser site settings, then try again.");
-        } else if (error.code === 2) {
-          finishLocationSearch("Your device could not determine a location. Turn on Windows location services and check browser permission.");
-        } else if (error.code === 3) {
-          finishLocationSearch("Location timed out. Try again near a window and check Windows location services.");
-        } else {
-          finishLocationSearch("Location failed (error " + error.code + "). Check browser and device location settings.");
-        }
-      }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
-    });
-
-    const routePlanner = document.getElementById("routePlanner");
-    document.getElementById("routeButton").addEventListener("click", function () {
-      const isOpen = routePlanner.classList.toggle("visible");
-      this.setAttribute("aria-expanded", String(isOpen));
-      this.textContent = isOpen ? "Close route planner" : "↗ Plan a route";
-      status.textContent = isOpen
-        ? "Enter a starting place and destination, then select Find route."
-        : "Route planner closed.";
-      if (isOpen) document.getElementById("routeStartInput").focus();
-    });
-
-    async function findPlace(query) {
-      const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="
-        + encodeURIComponent(query + ", Bangladesh");
-      const response = await fetch(url);
-      if (!response.ok) throw new Error("Place search unavailable");
-      const results = await response.json();
-      if (!results.length) throw new Error("Could not find \"" + query + "\". Try a nearby landmark or a more specific place name.");
-      return {
-        lat: Number(results[0].lat),
-        lng: Number(results[0].lon),
-        name: results[0].display_name
-      };
-    }
-
-    document.getElementById("routeForm").addEventListener("submit", async function (event) {
-      event.preventDefault();
-      const startQuery = document.getElementById("routeStartInput").value.trim();
-      const endQuery = document.getElementById("routeEndInput").value.trim();
-      if (!startQuery || !endQuery) {
-        status.textContent = "Enter both a starting place and a destination.";
-        return;
-      }
-      const submitButton = document.getElementById("routeSubmitButton");
-      submitButton.disabled = true;
-      submitButton.textContent = "Finding places…";
-      try {
-        status.textContent = "Looking up your starting point and destination…";
-        const start = await findPlace(startQuery);
-        const end = await findPlace(endQuery);
-        routeMarkers.forEach(marker => map.removeLayer(marker));
-        routeMarkers = [];
-        if (routeLine) map.removeLayer(routeLine);
-        routeLine = null;
-        routePanel.classList.remove("visible");
-        const startMarker = L.marker([start.lat, start.lng]).addTo(map)
-          .bindPopup("<strong>Start</strong><br>" + escapeHtml(start.name));
-        const endMarker = L.marker([end.lat, end.lng]).addTo(map)
-          .bindPopup("<strong>Destination</strong><br>" + escapeHtml(end.name));
-        routeMarkers.push(startMarker, endMarker);
-        await drawRoute(L.latLng(start.lat, start.lng), L.latLng(end.lat, end.lng));
-        if (routeLine) {
-          status.textContent = "Route ready: " + start.name + " → " + end.name + ". Check the locations and road signs before travelling.";
-          startMarker.bindPopup("<strong>Start</strong><br>" + escapeHtml(start.name));
-          endMarker.bindPopup("<strong>Destination</strong><br>" + escapeHtml(end.name));
-        }
-      } catch (error) {
-        status.textContent = error.message || "Could not find those places. Try a nearby landmark or a more specific address.";
-      } finally {
-        submitButton.disabled = false;
-        submitButton.innerHTML = 'Find route <span aria-hidden="true">→</span>';
-      }
-    });
-
-    document.getElementById("clearRouteButton").addEventListener("click", clearRoute);
-
-    function clearRoute() {
-      if (routeLine) map.removeLayer(routeLine);
-      routeLine = null;
-      routePanel.classList.remove("visible");
-      routeSteps.replaceChildren();
-      routeMarkers.forEach(marker => map.removeLayer(marker));
-      routeMarkers = [];
-      routePoints = [];
-      routeMode = false;
-      const routeButton = document.getElementById("routeButton");
-      routeButton.setAttribute("aria-expanded", "false");
-      routeButton.textContent = "↗ Plan a route";
-      document.getElementById("routePlanner").classList.remove("visible");
-      status.textContent = "Route cleared.";
-    }
-
-    async function drawRoute(start, end) {
-      status.textContent = "Finding a driving route…";
-      try {
-        const coords = start.lng + "," + start.lat + ";" + end.lng + "," + end.lat;
-        const url = "https://router.project-osrm.org/route/v1/driving/" + coords +
-          "?overview=full&geometries=geojson&steps=true";
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Routing service unavailable");
-        const data = await response.json();
-        if (data.code !== "Ok" || !data.routes || !data.routes.length) {
-          throw new Error("No route found");
-        }
-        const route = data.routes[0];
-        routeLine = L.geoJSON(route.geometry, {
-          style: { color: "#1769aa", weight: 6, opacity: 0.9, lineCap: "round", lineJoin: "round" }
-        }).addTo(map);
-        map.fitBounds(routeLine.getBounds(), { padding: [36, 36] });
-        const km = (route.distance / 1000).toFixed(1);
-        const mins = Math.round(route.duration / 60);
-        const duration = mins >= 60 ? Math.floor(mins / 60) + " hr " + (mins % 60) + " min" : mins + " min";
-        routeSummary.textContent = "Driving route · " + km + " km · about " + duration;
-        routeSteps.replaceChildren();
-        const steps = (route.legs || []).flatMap(leg => leg.steps || []);
-        steps.forEach(function (step) {
-          const li = document.createElement("li");
-          li.textContent = describeStep(step);
-          const detail = document.createElement("small");
-          detail.textContent = " · " + (step.distance < 1000 ? Math.round(step.distance) + " m" : (step.distance / 1000).toFixed(1) + " km");
-          li.appendChild(detail);
-          routeSteps.appendChild(li);
-        });
-        if (!steps.length) {
-          const li = document.createElement("li");
-          li.textContent = "Follow the highlighted route to your destination.";
-          routeSteps.appendChild(li);
-        }
-        routePanel.classList.add("visible");
-        status.textContent = "Route ready. Directions use available road data; check road signs and actual traffic while driving.";
-      } catch (error) {
-        status.textContent = "Could not calculate a route. Try nearby points or try again later.";
-      }
-    }
-
-    map.on("click", function (event) {
-      status.textContent = "Map location: " + event.latlng.lat.toFixed(5) +
-        ", " + event.latlng.lng.toFixed(5) + ". Search for a place or use Plan a route to enter locations by name.";
-    });
-
-    document.getElementById("searchForm").addEventListener("submit", async function (event) {
-      event.preventDefault();
-      const query = document.getElementById("searchInput").value.trim();
-      if (!query) {
-        status.textContent = "Enter a place name or address first.";
-        return;
-      }
-
-      // This simple prototype avoids autocomplete and limits search frequency.
-      const wait = 1100 - (Date.now() - lastSearchAt);
-      if (wait > 0) await new Promise(resolve => setTimeout(resolve, wait));
-      lastSearchAt = Date.now();
-
-      const button = document.getElementById("searchButton");
-      button.disabled = true;
-      status.textContent = "Searching…";
-
-      try {
-        const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&q="
-          + encodeURIComponent(query + ", Bangladesh");
-        const response = await fetch(url);
-        if (!response.ok) throw new Error("Search service unavailable");
-
-        const results = await response.json();
-        searchResults.replaceChildren();
-
-        if (!results.length) {
-          status.textContent = "No results found. Try another spelling or nearby landmark.";
-          return;
-        }
-
-        status.textContent = "Found " + results.length +
-          " result(s). Choose the correct place below.";
-        results.forEach(function (result, index) {
-          const resultButton = document.createElement("button");
-          resultButton.type = "button";
-          resultButton.className = "search-result";
-          resultButton.textContent = result.display_name;
-          const detail = document.createElement("small");
-          detail.textContent = "Result " + (index + 1) + " · Tap to show on map";
-          resultButton.appendChild(detail);
-          resultButton.addEventListener("click", function () {
-            const point = [Number(result.lat), Number(result.lon)];
-            map.setView(point, 16);
-
-            if (resultMarker) map.removeLayer(resultMarker);
-            resultMarker = L.marker(point).addTo(map)
-              .bindPopup("<strong>Search result</strong><br>" +
-                escapeHtml(result.display_name)).openPopup();
-
-            if (selectedMarker) map.removeLayer(selectedMarker);
-            selectedMarker = L.circleMarker(point, {
-              radius: 8, color: "#ffffff", weight: 3,
-              fillColor: "#1674d1", fillOpacity: 1
-            }).addTo(map);
-            status.textContent = "Place selected on the map.";
-          });
-          searchResults.appendChild(resultButton);
-        });
-      } catch (error) {
-        status.textContent =
-          "Search could not be completed. The map itself may still be used; try again later.";
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-    document.getElementById("resetButton").addEventListener("click", function () {
-      map.setView(savar, 13);
-      document.getElementById("searchInput").value = "";
-      status.textContent = "Map reset to Savar.";
-    });
-
-    function describeStep(step) {
-      const type = step.maneuver && step.maneuver.type;
-      const modifier = step.maneuver && step.maneuver.modifier;
-      const road = step.name ? " onto " + step.name : "";
-      const labels = {
-        depart: "Start",
-        arrive: "Arrive at your destination",
-        turn: "Turn",
-        "new name": "Continue",
-        continue: "Continue",
-        merge: "Merge",
-        "on ramp": "Take the ramp",
-        "off ramp": "Exit the ramp",
-        fork: "At the fork",
-        roundabout: "Enter the roundabout",
-        rotary: "Enter the rotary",
-        "end of road": "At the end of the road, turn",
-        uturn: "Make a U-turn"
-      };
-      let instruction = labels[type] || "Continue";
-      if (["turn", "fork", "end of road", "uturn"].includes(type) && modifier) {
-        instruction += " " + modifier.replace(/-/g, " ");
-      }
-      return instruction + road;
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, function (char) {
-        return {
-          "&": "&amp;", "<": "&lt;", ">": "&gt;",
-          '"': "&quot;", "'": "&#39;"
-        }[char];
-      });
-    }
-  </script>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lg" viewBox="0 0 256 256"><rect width="256" height="256" rx="58" fill="#123b32"/><circle cx="128" cy="128" r="96" fill="none" stroke="#1d5a4b" stroke-width="3"/><circle cx="128" cy="128" r="64" fill="none" stroke="#1d5a4b" stroke-width="3"/><path d="M44 206C76 176 98 216 128 194" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-dasharray="1 17"/><path d="M128 198C128 198 74 146 74 104a54 54 0 1 1 108 0c0 42-54 94-54 94z" fill="#f2b134"/><circle cx="128" cy="104" r="24" fill="#123b32"/><path d="M128 88l11 24-11-6-11 6z" fill="#fff"/></symbol></svg>
+<div id="map" aria-label="Map"></div>
+<button id="tog" aria-label="Show or hide panel">☰</button>
+<div class="fab"><button id="lyr" aria-label="Satellite or map">🛰</button><button id="loc" aria-label="My location">◎</button></div>
+<div id="banner" hidden><div id="bg"></div><div><div id="bd"></div><div id="bt"></div></div><div id="br"></div></div>
+<aside id="ui">
+ <div class="head"><svg class="logo" aria-hidden="true"><use href="#lg"/></svg><div><h1>DikChinho<span> Maps</span></h1><p data-i="tag"></p></div><button class="lang" id="lang">বাংলা</button></div>
+ <div class="body">
+  <div class="hide-nav row"><input id="q" type="search" autocomplete="off" data-ph="search"><button class="btn" id="sbtn" data-i="go"></button></div>
+  <div class="hide-nav" id="results"></div>
+  <div class="hide-nav row"><button class="btn" id="me" data-i="me" style="flex:1"></button></div>
+  <div class="hide-nav modes" id="modes"><button data-m="car" data-i="car"></button><button data-m="bike" data-i="bike"></button><button data-m="foot" data-i="foot"></button></div>
+  <div class="hide-nav sum" id="sum"></div>
+  <div class="hide-nav" id="routes"></div>
+  <div class="hide-nav row"><button class="btn pri" id="go" data-i="start"></button></div>
+  <button class="btn hide-nav" id="demo" data-i="demo"></button>
+  <div class="hide-nav"><h2 data-i="steps"></h2><ol id="steps"></ol></div>
+  <div class="nav-only"><button class="btn" id="vc"></button><button class="btn pri danger" id="stop" data-i="stop"></button></div>
+  <p class="note hide-nav" data-i="hint"></p>
+ </div>
+</aside>
+<div id="toast" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+// ---------- Settings: swap these URLs when you host your own tiles, routing and search ----------
+const CFG={center:[23.8583,90.2667],zoom:13,
+ tiles:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+ search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+ route:{car:'https://routing.openstreetmap.de/routed-car/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'}};
+const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
+bn:{tag:'পথ চিনুন। জায়গা জানুন।',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'ডেমো ড্রাইভ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',bike:'বাইক',foot:'হাঁটা',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'দ্রুততম',alt:'বিকল্প',steps:'দিকনির্দেশনা',pin:'নির্বাচিত স্থান',hint:'টিপ: ম্যাপের যেকোনো জায়গায় ট্যাপ করে স্থানটি দেখুন ও পথ জানুন। পুরো ম্যাপ দেখতে ☰ চাপুন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। ইন্টারনেট দেখুন বা অন্য মাধ্যম বেছে নিন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস',pick:'জায়গা খুঁজুন বা ম্যাপে ট্যাপ করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
+const S={lang:'en',voice:true,mode:'car',start:null,startName:'',dest:null,destName:'',me:null,routes:[],sel:0,nav:null};
+const $=s=>document.querySelector(s),t=k=>T[S.lang][k]||k,bn=()=>S.lang==='bn';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=x=>bn()?String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]):String(x);
+const fD=m=>m<1000?num(Math.max(10,Math.round(m/10)*10))+(bn()?' মিটার':' m'):num((m/1000).toFixed(1))+(bn()?' কিমি':' km');
+const fT=s=>{const m=Math.max(1,Math.round(s/60));return m>=60?num(Math.floor(m/60))+(bn()?' ঘণ্টা ':' h ')+num(m%60)+(bn()?' মিনিট':' min'):num(m)+(bn()?' মিনিট':' min')};
+const hav=(a,b)=>{const r=Math.PI/180,h=Math.sin((b[0]-a[0])*r/2)**2+Math.cos(a[0]*r)*Math.cos(b[0]*r)*Math.sin((b[1]-a[1])*r/2)**2;return 12742000*Math.asin(Math.sqrt(h))};
+function distToLine(p,line){const k=Math.cos(p[0]*Math.PI/180),m=q=>[(q[1]-p[1])*111320*k,(q[0]-p[0])*110540];let best=1e9;
+ for(let i=0;i<line.length-1;i++){const a=m(line[i]),b=m(line[i+1]),dx=b[0]-a[0],dy=b[1]-a[1],l=dx*dx+dy*dy;let u=l?Math.max(0,Math.min(1,-(a[0]*dx+a[1]*dy)/l)):0;best=Math.min(best,Math.hypot(a[0]+u*dx,a[1]+u*dy))}return best}
+function toast(s){const e=$('#toast');e.textContent=s;e.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>e.hidden=true,3500)}
+function say(s){if(!S.voice)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang=bn()?'bn-BD':'en-US';speechSynthesis.speak(u)}catch(e){}}
+let wl=null;const lock=async()=>{try{wl=await navigator.wakeLock.request('screen')}catch(e){}};
+// ---------- Map ----------
+const map=L.map('map',{zoomControl:false}).setView(CFG.center,CFG.zoom);
+L.control.zoom({position:'topright'}).addTo(map);
+const base=L.tileLayer(CFG.tiles,{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · Routing: OSRM'}).addTo(map);
+const imagery=L.tileLayer(CFG.sat,{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'});
+const LR=L.layerGroup().addTo(map),LP=L.layerGroup().addTo(map);let meM=null;
+const pad=()=>innerWidth>760?{paddingTopLeft:[400,70],paddingBottomRight:[50,50]}:{paddingTopLeft:[24,90],paddingBottomRight:[24,Math.round(innerHeight*.5)]};
+const dot=(ll,c,r=9)=>L.circleMarker(ll,{radius:r,color:'#fff',weight:3,fillColor:c,fillOpacity:1}).addTo(LP);
+function meMarker(){if(!S.me)return;if(meM)meM.setLatLng(S.me);else meM=L.circleMarker(S.me,{radius:8,color:'#fff',weight:3,fillColor:'#1a73e8',fillOpacity:1}).addTo(map)}
+function pins(){LP.clearLayers();if(S.start)dot(S.start,'#2fa36b');if(S.dest)dot(S.dest,'#d2402f')}
+function drawRoutes(){LR.clearLayers();
+ S.routes.forEach((R,i)=>{if(i!==S.sel)L.polyline(R.ll,{color:'#7b8fa8',weight:7,opacity:.85,dashArray:'8 8'}).on('click',()=>{S.sel=i;drawRoutes();ui()}).addTo(LR)});
+ const R=S.routes[S.sel];if(R){L.polyline(R.ll,{color:'#fff',weight:12}).addTo(LR);L.polyline(R.ll,{color:'#0f7ea8',weight:7}).addTo(LR)}}
+// ---------- Search & routing ----------
+async function search(){const q=$('#q').value.trim();if(!q)return;const c=map.getCenter(),box=[c.lng-.6,c.lat+.6,c.lng+.6,c.lat-.6].join(',');
+ try{const r=await fetch(`${CFG.search}?format=jsonv2&limit=6&countrycodes=bd&accept-language=bn,en&viewbox=${box}&q=${encodeURIComponent(q)}`);const j=await r.json();
+  $('#results').innerHTML=j.length?j.map((p,i)=>`<div class="res" data-i="${i}"><span>${esc(p.display_name.split(',').slice(0,2).join(','))}<small>${esc(p.display_name.split(',').slice(2,4).join(','))}</small></span><button data-s="${i}">${t('setstart')}</button></div>`).join(''):`<p class="note">${t('nores')}</p>`;
+  $('#results').onclick=e=>{const b=e.target.closest('[data-s]'),d=e.target.closest('[data-i]');if(!d)return;const p=j[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.display_name.split(',')[0];
+   $('#results').innerHTML='';map.setView(ll,15);if(b)setStart(ll,nm);else setDest(ll,nm)}}catch(e){toast(t('fail'))}}
+async function fetchRoutes(a,b){const r=await fetch(`${CFG.route[S.mode]}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`),j=await r.json();
+ if(j.code!=='Ok')throw 0;return j.routes.map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R))}
+async function plan(){const a=S.start||S.me;ui();if(!a||!S.dest)return;
+ try{S.routes=await fetchRoutes(a,S.dest);S.sel=0;drawRoutes();ui();map.fitBounds(L.polyline(S.routes[0].ll).getBounds(),pad())}catch(e){S.routes=[];drawRoutes();ui();toast(t('fail'))}}
+function setStart(ll,n){stopNav();S.start=ll;S.startName=n||t('pin');pins();plan()}
+function setDest(ll,n){stopNav();S.dest=ll;S.destName=n||t('pin');pins();plan()}
+function locate(){if(!navigator.geolocation)return toast(t('noloc'));navigator.geolocation.getCurrentPosition(p=>{S.me=[p.coords.latitude,p.coords.longitude];S.start=null;meMarker();pins();map.flyTo(S.me,15);plan()},()=>toast(t('noloc')),{enableHighAccuracy:true,timeout:10000})}
+function popup(ll,name,addr){S.pop={ll,name};L.popup().setLatLng(ll).setContent(`<b>${esc(name)}</b><div style="color:#5e726b;font-size:12px;margin:2px 0 8px">${esc(addr||'')}</div><button class="btn pri" style="padding:8px;font-size:14px" onclick="popGo()">${t('here')}</button><button class="btn" style="margin-top:6px;width:100%" onclick="popFrom()">${t('fromhere')}</button>`).openOn(map)}
+function popGo(){map.closePopup();setDest(S.pop.ll,S.pop.name)}
+function popFrom(){map.closePopup();setStart(S.pop.ll,S.pop.name)}
+map.on('click',async e=>{if(S.nav)return;const ll=[e.latlng.lat,e.latlng.lng];popup(ll,t('pin'),ll.map(v=>v.toFixed(4)).join(', '));
+ try{const r=await fetch(`${CFG.reverse}?format=jsonv2&zoom=18&accept-language=bn,en&lat=${ll[0]}&lon=${ll[1]}`),j=await r.json();
+  if(j.display_name&&S.pop&&S.pop.ll===ll){const q=j.display_name.split(',');popup(ll,j.name||q[0],q.slice(1,4).join(','))}}catch(x){}});
+// ---------- Directions text ----------
+const DIR={en:{left:'Turn left','slight left':'Bear left','sharp left':'Turn sharp left',right:'Turn right','slight right':'Bear right','sharp right':'Turn sharp right',straight:'Continue straight',uturn:'Make a U-turn'},
+bn:{left:'বামে ঘুরুন','slight left':'একটু বামে যান','sharp left':'তীক্ষ্ণ বামে ঘুরুন',right:'ডানে ঘুরুন','slight right':'একটু ডানে যান','sharp right':'তীক্ষ্ণ ডানে ঘুরুন',straight:'সোজা যান',uturn:'ইউ-টার্ন নিন'}};
+const GL={left:'↰','slight left':'↖','sharp left':'↰',right:'↱','slight right':'↗','sharp right':'↱',straight:'↑',uturn:'↶'};
+function sTxt(s){const m=s.maneuver,ty=m.type,rd=s.name||'';
+ if(ty==='arrive')return t('arrived');
+ if(ty==='depart')return bn()?`${rd||'এখান'} থেকে যাত্রা শুরু করুন`:`Start${rd?' on '+rd:''}`;
+ if(ty==='roundabout'||ty==='rotary')return bn()?`গোলচত্বরে ${num(m.exit||1)} নম্বর বহির্গমন নিন${rd?' — '+rd:''}`:`At the roundabout, take exit ${m.exit||1}${rd?' onto '+rd:''}`;
+ const v=DIR[S.lang][m.modifier]||DIR[S.lang].straight;return bn()?(rd?`${v} — ${rd}`:v):(rd?`${v} onto ${rd}`:v)}
+const glyph=s=>({arrive:'⚑',depart:'●',roundabout:'⟳',rotary:'⟳'}[s.maneuver.type]||GL[s.maneuver.modifier]||'↑');
+// ---------- Panel ----------
+function ui(){document.querySelectorAll('[data-i]').forEach(e=>{if(!e.dataset.i.match(/^\d+$/))e.textContent=t(e.dataset.i)});
+ document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
+ $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');
+ document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
+ const a=S.start?S.startName:S.me?t('me').slice(2):'—';
+ $('#sum').innerHTML=S.dest||S.start?`<span>${t('from')}: <b>${esc(a)}</b> → ${t('to')}: <b>${esc(S.destName||'—')}</b></span><span><button class="btn" id="swp">⇅</button> <button class="btn" id="clr">✕</button></span>`:`<span>${t('pick')}</span>`;
+ const R=S.routes[S.sel];$('#go').disabled=!R;$('#demo').style.display=R?'':'none';
+ $('#routes').innerHTML=S.routes.map((r,i)=>`<div class="card${i===S.sel?' sel':''}" data-r="${i}"><em>${t(i?'alt':'fast')}</em><b>${fT(r.duration)}</b> · ${fD(r.distance)}</div>`).join('');
+ $('#steps').innerHTML=R?R.legs[0].steps.map(s=>`<li><i>${glyph(s)}</i><span>${esc(sTxt(s))}</span><u>${s.distance?fD(s.distance):''}</u></li>`).join(''):''}
+$('#sum').onclick=e=>{const id=e.target.id;
+ if(id==='swp'){const a=S.start||S.me,n=S.start?S.startName:t('me').slice(2);S.start=S.dest;S.startName=S.destName;S.dest=a;S.destName=n;pins();plan()}
+ if(id==='clr'){S.start=S.dest=null;S.routes=[];LR.clearLayers();pins();ui()}};
+$('#routes').onclick=e=>{const c=e.target.closest('[data-r]');if(c){S.sel=+c.dataset.r;drawRoutes();ui()}};
+$('#modes').onclick=e=>{const m=e.target.dataset.m;if(m){S.mode=m;plan()}};
+$('#sbtn').onclick=search;$('#q').onkeydown=e=>{if(e.key==='Enter')search()};
+$('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
+$('#vc').onclick=()=>{S.voice=!S.voice;if(!S.voice)try{speechSynthesis.cancel()}catch(e){}ui()};
+$('#lang').onclick=()=>{S.lang=bn()?'en':'bn';ui();if(S.nav&&!S.nav.done)onPos(S.me)};
+// ---------- Navigation ----------
+const cum=l=>l.reduce((a,p,i)=>(a.push(i?a[i-1]+hav(l[i-1],p):0),a),[]);
+function at(n,d){const c=n.cum,l=n.line;if(d>=c[c.length-1])return l[l.length-1];let j=0;while(c[j+1]<=d)j++;const f=(d-c[j])/(c[j+1]-c[j]||1);return[l[j][0]+(l[j+1][0]-l[j][0])*f,l[j][1]+(l[j+1][1]-l[j][1])*f]}
+function startNav(sim){const R=S.routes[S.sel];if(!R)return;
+ if(!sim&&!navigator.geolocation)return toast(t('noloc'));
+ const n=S.nav={R,steps:R.legs[0].steps,line:R.ll,i:0,said:-1,rr:0,sim};
+ document.body.classList.add('navmode');$('#banner').hidden=false;map.invalidateSize();lock();say(sTxt(n.steps[0]));
+ if(sim){n.cum=cum(n.line);n.d=0;n.tm=setInterval(()=>onPos(at(n,n.d+=18)),200)}
+ else n.w=navigator.geolocation.watchPosition(p=>onPos([p.coords.latitude,p.coords.longitude]),()=>toast(t('noloc')),{enableHighAccuracy:true,maximumAge:1000})}
+function onPos(p){const n=S.nav;if(!n||n.done||!p)return;S.me=p;meMarker();map.setView(p,Math.max(map.getZoom(),17),{animate:false});
+ const st=n.steps;let nx,dn;
+ for(;;){nx=st[n.i+1];if(!nx)return arrive();dn=hav(p,[nx.maneuver.location[1],nx.maneuver.location[0]]);if(dn<35){n.i++;n.said=-1}else break}
+ if(!n.sim&&distToLine(p,n.line)>80&&Date.now()-n.rr>8000){n.rr=Date.now();return reroute(p)}
+ const left=dn+st.slice(n.i+1).reduce((q,s)=>q+s.distance,0);
+ $('#bg').textContent=glyph(nx);$('#bd').textContent=fD(dn);$('#bt').textContent=sTxt(nx);$('#br').textContent=fT(n.R.duration*left/n.R.distance)+' · '+fD(left);
+ if(dn<250&&n.said!==n.i){n.said=n.i;say((bn()?fD(dn)+' পর: ':'In '+fD(dn)+': ')+sTxt(nx))}}
+async function reroute(p){toast(t('rerouting'));try{const rs=await fetchRoutes(p,S.dest),n=S.nav;if(!n)return;S.routes=rs;S.sel=0;Object.assign(n,{R:rs[0],steps:rs[0].legs[0].steps,line:rs[0].ll,i:0,said:-1});drawRoutes();say(t('rerouting'))}catch(e){}}
+function arrive(){const n=S.nav;n.done=true;clearInterval(n.tm);if(n.w!=null)navigator.geolocation.clearWatch(n.w);
+ $('#bg').textContent='⚑';$('#bd').textContent=S.destName;$('#bt').textContent=t('arrived');$('#br').textContent='';say(t('arrived'))}
+function stopNav(){const n=S.nav;if(!n)return;clearInterval(n.tm);if(n.w!=null)navigator.geolocation.clearWatch(n.w);try{speechSynthesis.cancel()}catch(e){}try{wl&&wl.release()}catch(e){}
+ S.nav=null;document.body.classList.remove('navmode');$('#banner').hidden=true;map.invalidateSize();if(S.routes[0])map.fitBounds(L.polyline(S.routes[S.sel].ll).getBounds(),pad())}
+$('#tog').onclick=()=>document.body.classList.toggle('closed');
+let sat=false;$('#lyr').onclick=()=>{sat=!sat;if(sat){imagery.addTo(map);map.removeLayer(base)}else{base.addTo(map);map.removeLayer(imagery)}$('#lyr').textContent=sat?'🗺':'🛰'};
+$('#loc').onclick=locate;
+ui();
+</script>
 </body>
 </html>
