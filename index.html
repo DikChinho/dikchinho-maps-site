@@ -220,15 +220,18 @@ async function search(target='dest'){
  renderPlaces(places.slice(0,12),q,target);
 }
 function renderPlaces(places,q,target='dest'){
- const google='https://www.google.com/maps/search/'+encodeURIComponent(q);
- $('#results').innerHTML=(places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span><b>'+esc(p.name||String(p.display_name||q).split(',')[0])+'</b><small>'+esc(p.display_name||'')+'</small></span><button data-pick="'+i+'">'+(target==='start'?t('from')+' ✓':t('to')+' ✓')+'</button></div>').join(''):'<p class="note">'+t('nores')+'</p>')+'<p class="note" style="padding:4px 2px">Not the exact place? <a href="'+google+'" target="_blank" rel="noopener">Search Google Maps</a> · You can also tap the exact point on the map.</p>';
+ const google='https://www.google.com/maps/search/'+encodeURIComponent(q+' Bangladesh');
+ const osm='https://www.openstreetmap.org/search?query='+encodeURIComponent(q+' Bangladesh');
+ const noResults='<div style="border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--chip);margin-bottom:8px"><b>We couldn’t match “'+esc(q)+'” to a verified map result.</b><p class="note" style="margin-top:6px">This does not necessarily mean the place does not exist. Small neighbourhoods, housing societies, local nicknames and new businesses may be missing from the map data.</p><p class="note"><b>Try these steps:</b><br>• Add the area, city or district (e.g. “Ambagan, Savar, Bangladesh”).<br>• Try a nearby road, mosque, school, market or landmark.<br>• Search with Bangla spelling or English spelling.<br>• Enter latitude, longitude (e.g. 23.8583, 90.2667), or tap the exact spot on the map.</p><div class="row" style="margin-top:8px"><button class="btn" data-retry="1" style="flex:1">Try with Bangladesh</button></div><p class="note" style="margin-top:8px">Compare external map indexes: <a href="'+google+'" target="_blank" rel="noopener">Google Maps</a> · <a href="'+osm+'" target="_blank" rel="noopener">OpenStreetMap</a></p></div>';
+ $('#results').innerHTML=(places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span><b>'+esc(p.name||String(p.display_name||q).split(',')[0])+'</b><small>'+esc(p.display_name||'')+'</small></span><button data-pick="'+i+'">'+(target==='start'?t('from')+' ✓':t('to')+' ✓')+'</button></div>').join(''):noResults)+'<p class="note" style="padding:4px 2px">Map data is not complete everywhere. If you find the exact place in another map, copy its coordinates or tap that location here.</p>';
  $('#results').onclick=e=>{
+  if(e.target.closest('[data-retry]')){const input=target==='start'?'#fromq':'#toq';$(input).value=q+', Bangladesh';search(target);return}
   const d=e.target.closest('[data-i]');if(!d)return;
   const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||String(p.display_name||q).split(',')[0];
   if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;
   $('#results').innerHTML='';
   const kind=String(p.type||p.class||p.addresstype||'').toLowerCase();
-  const zoom=/city|town|village|district|county|state|administrative/.test(kind)?14:/road|street|house|building|address/.test(kind)?18:18;
+  const zoom=/city|town|village|district|county|state|administrative/.test(kind)?14:18;
   map.flyTo(ll,zoom,{duration:0.8});
   if(target==='start'){S.start=ll;S.startName=nm;$('#fromq').value=p.display_name||nm;pins();plan();navStatus()}
   else {S.dest=ll;S.destName=nm;$('#toq').value=p.display_name||nm;pins();plan();navStatus()}
