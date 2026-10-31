@@ -242,6 +242,10 @@
     let routeMarkers = [];
     let routeLine = null;
 
+    let locationWatchId = null;
+    let bestLocationAccuracy = Infinity;
+    let locationStartedAt = 0;
+
     document.getElementById("locateButton").addEventListener("click", function () {
       if (!window.isSecureContext) {
         status.textContent = "Location needs a secure HTTPS connection. Open the official GitHub Pages link.";
@@ -253,51 +257,76 @@
       }
 
       const locateButton = document.getElementById("locateButton");
-      locateButton.disabled = true;
-      status.textContent = "Requesting location permission… Check your browser’s address-bar permissions if no prompt appears.";
+      if (locationWatchId !== null) {
+        navigator.geolocation.clearWatch(locationWatchId);
+        locationWatchId = null;
+        locateButton.textContent = "◎ Improve location";
+        locateButton.disabled = false;
+        status.textContent = "Location search stopped. The last position remains selected.";
+        return;
+      }
 
-      function showPosition(position) {
+      bestLocationAccuracy = Infinity;
+      locationStartedAt = Date.now();
+      locateButton.textContent = "Stop location search";
+      locateButton.disabled = false;
+      status.textContent = "Finding a better position… Keep location services on and, if possible, move near a window.";
+
+      function finishLocationSearch(message) {
+        if (locationWatchId !== null) {
+          navigator.geolocation.clearWatch(locationWatchId);
+          locationWatchId = null;
+        }
+        locateButton.textContent = "◎ Improve location";
+        locateButton.disabled = false;
+        if (message) status.textContent = message;
+      }
+
+      locationWatchId = navigator.geolocation.watchPosition(function (position) {
+        const accuracy = position.coords.accuracy;
+        // Keep the most accurate reading received during this short search.
+        if (accuracy >= bestLocationAccuracy) {
+          if (Date.now() - locationStartedAt > 25000) {
+            finishLocationSearch("Best available accuracy is about " +
+              Math.round(bestLocationAccuracy) + " m. Your device may only provide an approximate location.");
+          }
+          return;
+        }
+
+        bestLocationAccuracy = accuracy;
         const point = [position.coords.latitude, position.coords.longitude];
-        map.setView(point, 16);
         if (resultMarker) map.removeLayer(resultMarker);
         resultMarker = L.marker(point).addTo(map)
-          .bindPopup("Your current location").openPopup();
+          .bindPopup("Your current location · accuracy about " + Math.round(accuracy) + " m");
         selectedPoint = L.latLng(point[0], point[1]);
         if (selectedMarker) map.removeLayer(selectedMarker);
         selectedMarker = L.marker(selectedPoint).addTo(map);
         selectedLocation.textContent = "Selected coordinates: " +
-          selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6);
-        status.textContent = "Your location is shown on the map (accuracy about " +
-          Math.round(position.coords.accuracy) + " metres).";
-        locateButton.disabled = false;
-      }
+          selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6) +
+          " · estimated accuracy ±" + Math.round(accuracy) + " m";
+        // Zoom in moderately; a high zoom does not make an inaccurate reading precise.
+        map.setView(point, accuracy <= 30 ? 17 : 15);
+        status.textContent = "Current location updated. Estimated accuracy: ±" +
+          Math.round(accuracy) + " m. Looking for a better reading for up to 25 seconds…";
 
-      function showLocationError(error) {
-        locateButton.disabled = false;
+        if (accuracy <= 25) {
+          finishLocationSearch("Good location reading received (estimated accuracy ±" +
+            Math.round(accuracy) + " m).");
+        } else if (Date.now() - locationStartedAt > 25000) {
+          finishLocationSearch("Best available accuracy is about ±" +
+            Math.round(bestLocationAccuracy) + " m. Your device or network may limit precision.");
+        }
+      }, function (error) {
         if (error.code === 1) {
-          status.textContent = "Location permission was denied. Click the site controls beside the address bar, allow Location, then press My location again.";
+          finishLocationSearch("Location permission was denied. Allow Location in the browser site settings, then try again.");
         } else if (error.code === 2) {
-          status.textContent = "Your device could not determine a location. Turn on device location services and check your internet connection.";
+          finishLocationSearch("Your device could not determine a location. Turn on Windows location services and check browser permission.");
         } else if (error.code === 3) {
-          status.textContent = "Location request timed out. Try again near a window or check device location settings.";
+          finishLocationSearch("Location timed out. Try again near a window and check Windows location services.");
         } else {
-          status.textContent = "Location failed (error " + error.code + "). Check browser site permissions and device location settings, then retry.";
+          finishLocationSearch("Location failed (error " + error.code + "). Check browser and device location settings.");
         }
-      }
-
-      // A low-power request is often more reliable on laptops and desktop PCs.
-      navigator.geolocation.getCurrentPosition(showPosition, function (error) {
-        if (error.code === 1) {
-          showLocationError(error);
-          return;
-        }
-        status.textContent = "Trying a more accurate location request…";
-        navigator.geolocation.getCurrentPosition(showPosition, showLocationError, {
-          enableHighAccuracy: true,
-          timeout: 20000,
-          maximumAge: 120000
-        });
-      }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 120000 });
+      }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
     });
 
     document.getElementById("routeButton").addEventListener("click", function () {
