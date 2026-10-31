@@ -46,6 +46,7 @@ ol li i{font-style:normal;font-size:18px;color:var(--g)}ol li u{text-decoration:
 @media(prefers-color-scheme:dark){ol li i,.modes button.on{color:var(--gold)}.modes button.on{background:#1f5a4b}}
 h2{font-size:15px;margin:2px 0}.note{color:var(--mute);font-size:12.5px;margin:0}
 .nav-only{display:none;flex-direction:column;gap:10px}
+#navbox{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}#navbox[hidden]{display:none}#navtoggle.on{background:var(--g);color:#fff}
 .navmode .nav-only{display:flex}.navmode .hide-nav{display:none}.navmode #ui{bottom:auto}
 #banner{position:fixed;z-index:1200;left:392px;right:60px;top:12px;background:var(--g);color:#fff;border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:52px 1fr;gap:4px 10px;align-items:center;box-shadow:0 4px 18px rgba(0,0,0,.35)}
 #banner[hidden]{display:none}
@@ -74,6 +75,12 @@ body.closed #ui{transform:translateX(-104%)}body.closed #tog{left:12px}.navmode 
 <aside id="ui">
  <div class="head"><svg class="logo" aria-hidden="true"><use href="#lg"/></svg><div><h1>DikChinho<span> Maps</span></h1><p data-i="tag"></p></div><button class="lang" id="lang">বাংলা</button></div>
  <div class="body">
+  <div class="row"><button class="btn" id="navtoggle" style="flex:1" data-i="planroute">⇄ Plan a route</button></div>
+  <div id="navbox" hidden>
+   <div class="row"><input id="fromq" type="search" autocomplete="off" data-ph="fromsearch"><button class="btn" id="frombtn" data-i="find"></button></div>
+   <div class="row"><input id="toq" type="search" autocomplete="off" data-ph="tosearch"><button class="btn" id="tobtn" data-i="find"></button></div>
+   <p class="note" id="navstatus"></p>
+  </div>
   <div class="hide-nav row"><input id="q" type="search" autocomplete="off" data-ph="search"><button class="btn" id="sbtn" data-i="go"></button></div>
   <div class="hide-nav" id="results"></div>
   <div class="hide-nav row"><button class="btn" id="me" data-i="me" style="flex:1"></button></div>
@@ -97,8 +104,8 @@ const CFG={center:[23.8583,90.2667],zoom:13,
  tiles:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
  search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',style:'https://tiles.openfreemap.org/styles/liberty',photon:'https://photon.komoot.io/api/',overpass:'https://overpass-api.de/api/interpreter',barikoi:{key:'',url:'https://barikoi.xyz/v2/api/search/autocomplete/place'},sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  route:{car:'https://routing.openstreetmap.de/routed-car/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'}};
-const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
-bn:{tag:'পথ চিনুন। জায়গা জানুন।',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'ডেমো ড্রাইভ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',bike:'বাইক',foot:'হাঁটা',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'দ্রুততম',alt:'বিকল্প',steps:'দিকনির্দেশনা',pin:'নির্বাচিত স্থান',hint:'টিপ: ম্যাপের যেকোনো জায়গায় ট্যাপ করে স্থানটি দেখুন ও পথ জানুন। পুরো ম্যাপ দেখতে ☰ চাপুন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। ইন্টারনেট দেখুন বা অন্য মাধ্যম বেছে নিন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস',pick:'জায়গা খুঁজুন বা ম্যাপে ট্যাপ করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
+const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',planroute:'⇄ Plan a route',find:'Find',fromsearch:'Starting point (e.g. home)',tosearch:'Destination (e.g. Dhaka airport)',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
+bn:{tag:'পথ চিনুন। জায়গা জানুন।',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',planroute:'⇄ পথ পরিকল্পনা',find:'খুঁজুন',fromsearch:'শুরুর স্থান (যেমন বাসা)',tosearch:'গন্তব্য (যেমন ঢাকা বিমানবন্দর)',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'ডেমো ড্রাইভ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',bike:'বাইক',foot:'হাঁটা',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'দ্রুততম',alt:'বিকল্প',steps:'দিকনির্দেশনা',pin:'নির্বাচিত স্থান',hint:'টিপ: ম্যাপের যেকোনো জায়গায় ট্যাপ করে স্থানটি দেখুন ও পথ জানুন। পুরো ম্যাপ দেখতে ☰ চাপুন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। ইন্টারনেট দেখুন বা অন্য মাধ্যম বেছে নিন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস',pick:'জায়গা খুঁজুন বা ম্যাপে ট্যাপ করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
 const S={lang:'en',voice:true,mode:'car',start:null,startName:'',dest:null,destName:'',me:null,routes:[],sel:0,nav:null};
 const $=s=>document.querySelector(s),t=k=>T[S.lang][k]||k,bn=()=>S.lang==='bn';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -128,27 +135,38 @@ function drawRoutes(){LR.clearLayers();
  S.routes.forEach((R,i)=>{if(i!==S.sel)L.polyline(R.ll,{color:'#7b8fa8',weight:7,opacity:.85,dashArray:'8 8'}).on('click',()=>{S.sel=i;drawRoutes();ui()}).addTo(LR)});
  const R=S.routes[S.sel];if(R){L.polyline(R.ll,{color:'#fff',weight:12}).addTo(LR);L.polyline(R.ll,{color:'#0f7ea8',weight:7}).addTo(LR)}}
 // ---------- Search & routing ----------
-async function search(){
- const q=$('#q').value.trim();if(!q)return;
- const center=map.getCenter(),ctr=[center.lat,center.lng],cm=q.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
- if(cm){let a=+cm[1],b=+cm[2];if(a>40)[a,b]=[b,a];renderPlaces([{lat:a,lon:b,name:t('pin'),display_name:a.toFixed(5)+', '+b.toFixed(5),type:'coordinates'}],q);return}
+let searchTarget='dest';
+async function search(target='dest'){
+ searchTarget=target;
+ const input=target==='start'?'#fromq':target==='dest'?'#toq':'#q';
+ const q=$(input).value.trim();if(!q)return;
+ const center=map.getCenter(),ctr=[center.lat,center.lng],cm=q.match(/^(-?\\d+(?:\\.\\d+)?)\\s*[, ]\\s*(-?\\d+(?:\\.\\d+)?)$/);
+ if(cm){let a=+cm[1],b=+cm[2];if(a>40)[a,b]=[b,a];renderPlaces([{lat:a,lon:b,name:t('pin'),display_name:a.toFixed(5)+', '+b.toFixed(5),type:'coordinates'}],q,target);return}
  $('#results').innerHTML='<p class="note">'+t('srch')+'</p>';
- const box=[center.lng-1,center.lat+1,center.lng+1,center.lat-1].join(','),re=q.replace(/[^\p{L}\p{N} ]/gu,' ').trim();
- const safe=re.replace(/["\\]/g,''),ov='[out:json][timeout:12];(nwr["name"~"'+safe+'",i](around:20000,'+center.lat+','+center.lng+'););out center 12;';
+ const box=[center.lng-1,center.lat+1,center.lng+1,center.lat-1].join(','),safe=q.replace(/["\\\\]/g,' ').trim();
+ const ov='[out:json][timeout:12];(nwr["name"~"'+safe.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'",i](around:35000,'+center.lat+','+center.lng+'););out center 12;';
  const jobs=[
- fetch(CFG.search+'?format=jsonv2&limit=8&addressdetails=1&countrycodes=bd&accept-language=bn,en&viewbox='+box+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():[]).catch(()=>[]),
- fetch(CFG.photon+'?limit=8&lat='+center.lat+'&lon='+center.lng+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).filter(f=>!f.properties.countrycode||f.properties.countrycode==='BD').map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state].filter(Boolean).join(', '),type:f.properties.osm_value||''}))).catch(()=>[]),
- re.length>2?fetch(CFG.overpass+'?data='+encodeURIComponent(ov)).then(r=>r.ok?r.json():{elements:[]}).then(j=>(j.elements||[]).map(x=>({lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,name:x.tags?.['name:en']||x.tags?.name||'',display_name:[x.tags?.name,x.tags?.['addr:street'],x.tags?.['addr:city']].filter(Boolean).join(', '),type:x.tags?.amenity||x.tags?.shop||x.tags?.tourism||x.tags?.place||''}))).catch(()=>[]):Promise.resolve([])
+ fetch(CFG.search+'?format=jsonv2&limit=10&addressdetails=1&accept-language=bn,en&viewbox='+box+'&bounded=0&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():[]).catch(()=>[]),
+ fetch(CFG.photon+'?limit=15&lat='+center.lat+'&lon='+center.lng+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state,f.properties.country].filter(Boolean).join(', '),type:f.properties.osm_value||'',country:f.properties.countrycode||''}))).catch(()=>[]),
+ safe.length>2?fetch(CFG.overpass+'?data='+encodeURIComponent(ov)).then(r=>r.ok?r.json():{elements:[]}).then(j=>(j.elements||[]).map(x=>({lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,name:x.tags?.['name:en']||x.tags?.name||'',display_name:[x.tags?.name,x.tags?.['addr:street'],x.tags?.['addr:city']].filter(Boolean).join(', '),type:x.tags?.amenity||x.tags?.shop||x.tags?.tourism||x.tags?.place||'',country:'bd'}))).catch(()=>[]):Promise.resolve([])
  ];
- if(CFG.barikoi.key)jobs.push(fetch(CFG.barikoi.url+'?api_key='+encodeURIComponent(CFG.barikoi.key)+'&bangla=true&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{}).then(j=>(j.places||[]).map(p=>({lat:+p.latitude,lon:+p.longitude,name:(bn()&&p.address_bn)||p.address||'',display_name:[p.address,p.area,p.city].filter(Boolean).join(', '),type:p.pType||''}))).catch(()=>[]));
+ if(CFG.barikoi.key)jobs.push(fetch(CFG.barikoi.url+'?api_key='+encodeURIComponent(CFG.barikoi.key)+'&bangla=true&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{}).then(j=>(j.places||[]).map(p=>({lat:+p.latitude,lon:+p.longitude,name:(bn()&&p.address_bn)||p.address||'',display_name:[p.address,p.area,p.city].filter(Boolean).join(', '),type:p.pType||'',country:'bd'}))).catch(()=>[]));
  const lists=await Promise.all(jobs),all=lists.flat().filter(p=>(p.name||p.display_name)&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)),seen=[],places=[];
- all.forEach(p=>{const ll=[+p.lat,+p.lon],key=String(p.name||p.display_name).toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();if(seen.some(x=>(x.key===key&&hav(x.ll,ll)<200)||hav(x.ll,ll)<25))return;seen.push({key,ll});places.push({...p,lat:ll[0],lon:ll[1],_d:hav(ctr,ll)})});
- const z=q.toLowerCase();places.sort((a,b)=>((String(a.name||a.display_name).toLowerCase().startsWith(z)?0:1)-(String(b.name||b.display_name).toLowerCase().startsWith(z)?0:1))||a._d-b._d);renderPlaces(places.slice(0,10),q)
+ all.forEach(p=>{const ll=[+p.lat,+p.lon],key=String(p.name||p.display_name).toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();if(seen.some(x=>(x.key===key&&hav(x.ll,ll)<200)||hav(x.ll,ll)<25))return;seen.push({key,ll});places.push({...p,lat:ll[0],lon:ll[1],_d:hav(ctr,ll)})});
+ const z=q.toLowerCase();places.sort((a,b)=>((a.country==='bd'?0:1)-(b.country==='bd'?0:1))||((String(a.name||a.display_name).toLowerCase().startsWith(z)?0:1)-(String(b.name||b.display_name).toLowerCase().startsWith(z)?0:1))||a._d-b._d);
+ renderPlaces(places.slice(0,12),q,target)
 }
-function renderPlaces(places,q){
- $('#results').innerHTML=places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span>'+esc(p.display_name||p.name||q)+'<small>'+esc(p.type||p.class||'')+'</small></span><button data-s="'+i+'">'+t('setstart')+'</button></div>').join(''):'<p class="note">'+t('nores')+'</p>';
- $('#results').onclick=e=>{const b=e.target.closest('[data-s]'),d=e.target.closest('[data-i]');if(!d)return;const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||String(p.display_name||q).split(',')[0];if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;$('#results').innerHTML='';map.flyTo(ll,17);popup(ll,nm,p.display_name);if(b)setStart(ll,nm);else setDest(ll,nm)}
+function renderPlaces(places,q,target='dest'){
+ $('#results').innerHTML=places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span>'+esc(p.display_name||p.name||q)+'<small>'+esc(p.type||p.class||'')+'</small></span><button data-pick="'+i+'">'+(target==='start'?t('from')+' ✓':target==='dest'?t('to')+' ✓':t('to'))+'</button></div>').join(''):'<p class="note">'+t('nores')+' <a href="https://www.google.com/maps/search/'+encodeURIComponent(q)+'" target="_blank" rel="noopener">Try Google Maps</a></p>';
+ $('#results').onclick=e=>{const d=e.target.closest('[data-i]');if(!d)return;const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||String(p.display_name||q).split(',')[0];if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;
+ $('#results').innerHTML='';map.flyTo(ll,17);
+ if(target==='start'){S.start=ll;S.startName=nm;$('#fromq').value=p.display_name||nm;pins();plan();navStatus()}
+ else if(target==='dest'){S.dest=ll;S.destName=nm;$('#toq').value=p.display_name||nm;pins();plan();navStatus()}
+ else {popup(ll,nm,p.display_name);setDest(ll,nm)}
+ };
 }
+function navStatus(){const a=S.start?S.startName:'—',b=S.dest?S.destName:'—';$('#navstatus').textContent=t('from')+': '+a+' → '+t('to')+': '+b}
+
 async function fetchRoutes(a,b){const r=await fetch(`${CFG.route[S.mode]}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`),j=await r.json();
  if(j.code!=='Ok')throw 0;return j.routes.map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R))}
 async function plan(){const a=S.start||S.me;ui();if(!a||!S.dest)return;
@@ -175,7 +193,7 @@ const glyph=s=>({arrive:'⚑',depart:'●',roundabout:'⟳',rotary:'⟳'}[s.mane
 // ---------- Panel ----------
 function ui(){document.querySelectorAll('[data-i]').forEach(e=>{if(!e.dataset.i.match(/^\d+$/))e.textContent=t(e.dataset.i)});
  document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
- $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');
+ $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#navtoggle').textContent=t('planroute');$('#frombtn').textContent=t('find');$('#tobtn').textContent=t('find');$('#fromq').placeholder=t('fromsearch');$('#toq').placeholder=t('tosearch');$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');
  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
  const a=S.start?S.startName:S.me?t('me').slice(2):'—';
  $('#sum').innerHTML=S.dest||S.start?`<span>${t('from')}: <b>${esc(a)}</b> → ${t('to')}: <b>${esc(S.destName||'—')}</b></span><span><button class="btn" id="swp">⇅</button> <button class="btn" id="clr">✕</button></span>`:`<span>${t('pick')}</span>`;
@@ -187,7 +205,11 @@ $('#sum').onclick=e=>{const id=e.target.id;
  if(id==='clr'){S.start=S.dest=null;S.routes=[];LR.clearLayers();pins();ui()}};
 $('#routes').onclick=e=>{const c=e.target.closest('[data-r]');if(c){S.sel=+c.dataset.r;drawRoutes();ui()}};
 $('#modes').onclick=e=>{const m=e.target.dataset.m;if(m){S.mode=m;plan()}};
-$('#sbtn').onclick=search;$('#q').onkeydown=e=>{if(e.key==='Enter')search()};
+$('#sbtn').onclick=()=>search('map');$('#q').onkeydown=e=>{if(e.key==='Enter')search('map')};
+$('#frombtn').onclick=()=>search('start');$('#fromq').onkeydown=e=>{if(e.key==='Enter')search('start')};
+$('#tobtn').onclick=()=>search('dest');$('#toq').onkeydown=e=>{if(e.key==='Enter')search('dest')};
+$('#navtoggle').onclick=()=>{const box=$('#navbox');box.hidden=!box.hidden;$('#navtoggle').classList.toggle('on',!box.hidden);if(!box.hidden){$('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus()}};
+
 $('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
 $('#vc').onclick=()=>{S.voice=!S.voice;if(!S.voice)try{speechSynthesis.cancel()}catch(e){}ui()};
 $('#lang').onclick=()=>{S.lang=bn()?'en':'bn';ui();if(S.nav&&!S.nav.done)onPos(S.me)};
