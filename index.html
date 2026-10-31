@@ -200,6 +200,35 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
     }
+
+    .route-planner {
+      display: none; margin: 0 0 18px; padding: 20px;
+      border: 1px solid #dce7df; border-radius: 17px;
+      background: #fff; box-shadow: 0 8px 28px rgba(21,55,42,.055);
+    }
+    .route-planner.visible { display: block; }
+    .planner-heading { display: flex; align-items: center; gap: 12px; margin-bottom: 17px; }
+    .planner-icon {
+      display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px;
+      border-radius: 13px; background: #e8f2ed; color: #245b48; font-size: 23px; font-weight: 700;
+    }
+    .planner-heading h3 { margin: 0 0 4px; font: 800 17px Manrope, sans-serif; color: #183b30; }
+    .planner-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .route-form { display: grid; grid-template-columns: minmax(0,1fr) 24px minmax(0,1fr) auto; gap: 10px; align-items: end; }
+    .route-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    .route-field > span { color: #718279; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+    .route-field input { min-height: 48px; padding: 12px; border-radius: 10px; background: #fbfcfb; }
+    .route-connector { height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; }
+    .route-connector span:first-child { width: 8px; height: 8px; border: 2px solid #2b8061; border-radius: 50%; }
+    .route-connector span:last-child { height: 17px; border-left: 2px dashed #b8c9be; }
+    .route-submit { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 0 18px; }
+    .planner-note { margin: 13px 0 0; color: #89958e; font-size: 11px; line-height: 1.5; }
+    @media (max-width: 760px) {
+      .route-planner { padding: 15px; }
+      .route-form { grid-template-columns: minmax(0,1fr); gap: 10px; }
+      .route-connector { display: none; }
+      .route-submit { width: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -244,9 +273,22 @@
 
     <div class="map-actions" aria-label="Map tools">
       <button type="button" id="locateButton">◎ My location</button>
-      <button type="button" id="routeButton" aria-pressed="false">↗ Plan a route</button>
+      <button type="button" id="routeButton" aria-expanded="false" aria-controls="routePlanner">↗ Plan a route</button>
       <button type="button" class="secondary" id="clearRouteButton">Clear route</button>
     </div>
+    <section id="routePlanner" class="route-planner" aria-label="Plan a driving route">
+      <div class="planner-heading">
+        <div class="planner-icon" aria-hidden="true">↗</div>
+        <div><h3>Plan your journey</h3><p>Enter places by name or address. No need to select points on the map.</p></div>
+      </div>
+      <form id="routeForm" class="route-form">
+        <label class="route-field"><span>FROM</span><input id="routeStartInput" type="text" placeholder="Starting place, e.g. Savar Bus Stand" autocomplete="street-address" required></label>
+        <div class="route-connector" aria-hidden="true"><span></span><span></span></div>
+        <label class="route-field"><span>TO</span><input id="routeEndInput" type="text" placeholder="Destination, e.g. National Martyrs’ Memorial" autocomplete="street-address" required></label>
+        <button id="routeSubmitButton" class="route-submit" type="submit">Find route <span aria-hidden="true">→</span></button>
+      </form>
+      <p class="planner-note">Place search is based on OpenStreetMap data. Check that the selected locations match your intended journey.</p>
+    </section>
 
     <div class="map-wrap">
       <div class="map-label">Savar · Bangladesh</div>
@@ -386,14 +428,68 @@
       }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
     });
 
+    const routePlanner = document.getElementById("routePlanner");
     document.getElementById("routeButton").addEventListener("click", function () {
-      routeMode = !routeMode;
-      this.setAttribute("aria-pressed", String(routeMode));
-      this.textContent = routeMode ? "Choose route points…" : "↗ Plan a route";
-      routePoints = [];
-      status.textContent = routeMode
-        ? "Tap the map once for the starting point, then tap your destination."
-        : "Route selection cancelled.";
+      const isOpen = routePlanner.classList.toggle("visible");
+      this.setAttribute("aria-expanded", String(isOpen));
+      this.textContent = isOpen ? "Close route planner" : "↗ Plan a route";
+      status.textContent = isOpen
+        ? "Enter a starting place and destination, then select Find route."
+        : "Route planner closed.";
+      if (isOpen) document.getElementById("routeStartInput").focus();
+    });
+
+    async function findPlace(query) {
+      const url = "https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q="
+        + encodeURIComponent(query + ", Bangladesh");
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Place search unavailable");
+      const results = await response.json();
+      if (!results.length) throw new Error("Could not find \"" + query + "\". Try a nearby landmark or a more specific place name.");
+      return {
+        lat: Number(results[0].lat),
+        lng: Number(results[0].lon),
+        name: results[0].display_name
+      };
+    }
+
+    document.getElementById("routeForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const startQuery = document.getElementById("routeStartInput").value.trim();
+      const endQuery = document.getElementById("routeEndInput").value.trim();
+      if (!startQuery || !endQuery) {
+        status.textContent = "Enter both a starting place and a destination.";
+        return;
+      }
+      const submitButton = document.getElementById("routeSubmitButton");
+      submitButton.disabled = true;
+      submitButton.textContent = "Finding places…";
+      try {
+        status.textContent = "Looking up your starting point and destination…";
+        const start = await findPlace(startQuery);
+        const end = await findPlace(endQuery);
+        routeMarkers.forEach(marker => map.removeLayer(marker));
+        routeMarkers = [];
+        if (routeLine) map.removeLayer(routeLine);
+        routeLine = null;
+        routePanel.classList.remove("visible");
+        const startMarker = L.marker([start.lat, start.lng]).addTo(map)
+          .bindPopup("<strong>Start</strong><br>" + escapeHtml(start.name));
+        const endMarker = L.marker([end.lat, end.lng]).addTo(map)
+          .bindPopup("<strong>Destination</strong><br>" + escapeHtml(end.name));
+        routeMarkers.push(startMarker, endMarker);
+        await drawRoute(L.latLng(start.lat, start.lng), L.latLng(end.lat, end.lng));
+        if (routeLine) {
+          status.textContent = "Route ready: " + start.name + " → " + end.name + ". Check the locations and road signs before travelling.";
+          startMarker.bindPopup("<strong>Start</strong><br>" + escapeHtml(start.name));
+          endMarker.bindPopup("<strong>Destination</strong><br>" + escapeHtml(end.name));
+        }
+      } catch (error) {
+        status.textContent = error.message || "Could not find those places. Try a nearby landmark or a more specific address.";
+      } finally {
+        submitButton.disabled = false;
+        submitButton.innerHTML = 'Find route <span aria-hidden="true">→</span>';
+      }
     });
 
     document.getElementById("clearRouteButton").addEventListener("click", clearRoute);
@@ -457,26 +553,8 @@
     }
 
     map.on("click", function (event) {
-      if (routeMode) {
-        routePoints.push(event.latlng);
-        const marker = L.marker(event.latlng).addTo(map)
-          .bindPopup(routePoints.length === 1 ? "Route start" : "Route destination")
-          .openPopup();
-        routeMarkers.push(marker);
-        if (routePoints.length === 1) {
-          status.textContent = "Start selected. Now tap the destination.";
-          return;
-        }
-        const start = routePoints[0];
-        const end = routePoints[1];
-        routeMode = false;
-        document.getElementById("routeButton").setAttribute("aria-pressed", "false");
-        document.getElementById("routeButton").textContent = "↗ Plan a route";
-        drawRoute(start, end);
-        return;
-      }
       status.textContent = "Map location: " + event.latlng.lat.toFixed(5) +
-        ", " + event.latlng.lng.toFixed(5) + ". Use search or Plan a route to continue.";
+        ", " + event.latlng.lng.toFixed(5) + ". Search for a place or use Plan a route to enter locations by name.";
     });
 
     document.getElementById("searchForm").addEventListener("submit", async function (event) {
