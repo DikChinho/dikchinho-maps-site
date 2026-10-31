@@ -15,7 +15,7 @@ The public GitHub Pages website is a static front end. Its current capabilities 
 | Map | Leaflet with an OpenFreeMap/MapLibre vector style when available; OSM raster fallback; Esri imagery toggle | Third-party hosting; no SLA; no offline map downloads |
 | Search | Photon + Nominatim | Search results depend on external indexes and their use policies |
 | Routing | Valhalla public demo API, OSRM-compatible response format | Fair-use demo only; not our own routing infrastructure |
-| Vehicle profiles | Valhalla `auto`, `motorcycle`, `motor_scooter`, `bicycle`, `pedestrian` | Motorcycle costing is marked beta upstream; source map access tags need local QA |
+| Vehicle profiles | Valhalla `auto`, `motorcycle`, `motor_scooter`, `bicycle`, `pedestrian` | Motorcycle costing is marked beta upstream; source map access tags need local QA. CNG/auto-rickshaw, cycle-rickshaw and bus profiles are not exposed yet because local access rules have not been validated |
 | Route preferences | Balanced, shortest, avoid tolls, avoid highways | These are routing-engine preferences, not guaranteed road conditions |
 | Navigation | Browser GPS watch, spoken instruction, reroute when sufficiently off route | Browser background/locked-screen behaviour varies by device |
 | Road reports | Browser localStorage prototype | Visible only on the same browser/device; not shared |
