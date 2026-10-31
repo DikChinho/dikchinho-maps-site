@@ -141,7 +141,7 @@ body.closed #tog{left:16px}
   <div class="hide-nav row"><button class="btn" id="me" data-i="me" style="flex:1"></button></div>
   <div class="hide-nav modes" id="modes"><button data-m="car" data-i="car"></button><button data-m="motorcycle" data-i="motorcycle"></button><button data-m="scooter" data-i="scooter"></button><button data-m="bike" data-i="bike"></button><button data-m="foot" data-i="foot"></button></div>
   <div class="hide-nav pref-row"><label for="routePreference" data-i="routeStyle">Route preference</label><select id="routePreference"><option value="balanced" data-i="balanced">Balanced</option><option value="shortest" data-i="shortest">Shortest distance</option><option value="avoid-tolls" data-i="avoidTolls">Avoid tolls</option><option value="avoid-highways" data-i="avoidHighways">Avoid highways</option></select></div>
-  <div class="hide-nav report-tools"><div class="report-head"><strong data-i="roadIntel">Road intelligence</strong><button class="btn" id="reportIssue" data-i="reportIssue">＋ Report issue</button></div><div class="report-list" id="reportList"></div><p class="engine-note" data-i="localOnly">Test mode: reports are saved only on this device, not shared with other users.</p><p class="engine-note">Routing: Valhalla community demo · map data © OpenStreetMap contributors</p></div>
+  <div class="hide-nav report-tools"><div class="report-head"><strong data-i="roadIntel">Road intelligence</strong><button class="btn" id="reportIssue" data-i="reportIssue">＋ Report issue</button></div><div class="report-list" id="reportList"></div><p class="engine-note" data-i="localOnly">Test mode: reports are saved only on this device, not shared with other users.</p><p class="engine-note">Routing beta · no live traffic feed · map data © OpenStreetMap contributors</p></div>
   <div class="hide-nav sum" id="sum"></div>
   <div class="hide-nav" id="routes"></div>
   <div class="hide-nav row"><button class="btn pri" id="go" data-i="start"></button></div>
@@ -250,7 +250,7 @@ function routeRequest(a,b){
  if(S.preference==='avoid-highways'&&['auto','motorcycle','motor_scooter'].includes(costing))opts.use_highways=0.1;
  if(costing==='motorcycle')opts.use_trails=0;
  if(costing==='motor_scooter')opts.use_primary=0.35;
- const payload={locations:[{lat:a[0],lon:a[1],type:'break',name:S.startName||'Starting point',city:'Savar',state:'Dhaka',country:'Bangladesh'},{lat:b[0],lon:b[1],type:'break',name:S.destName||'Destination',city:'Savar',state:'Dhaka',country:'Bangladesh'}],costing,costing_options:Object.keys(opts).length?{[costing]:opts}:undefined,units:'kilometers',language:'en-US',format:'osrm',shape_format:'geojson',alternates:2,banner_instructions:true,voice_instructions:true,turn_lanes:true};
+ const payload={locations:[{lat:a[0],lon:a[1],type:'break',name:S.startName||'Starting point'},{lat:b[0],lon:b[1],type:'break',name:S.destName||'Destination'}],costing,costing_options:Object.keys(opts).length?{[costing]:opts}:undefined,units:'kilometers',language:'en-US',format:'osrm',shape_format:'geojson',alternates:2,banner_instructions:true,voice_instructions:true,turn_lanes:true};
  return payload
 }
 async function fetchRoutes(a,b){
