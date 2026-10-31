@@ -504,8 +504,9 @@
       routePoints = [];
       routeMode = false;
       const routeButton = document.getElementById("routeButton");
-      routeButton.setAttribute("aria-pressed", "false");
+      routeButton.setAttribute("aria-expanded", "false");
       routeButton.textContent = "↗ Plan a route";
+      document.getElementById("routePlanner").classList.remove("visible");
       status.textContent = "Route cleared.";
     }
 
