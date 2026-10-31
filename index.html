@@ -54,6 +54,16 @@
     .search {
       display: flex; gap: 8px; margin: 16px 0 12px;
     }
+    .search-results {
+      display: grid; gap: 8px; margin: 8px 0 12px;
+    }
+    .search-result {
+      width: 100%; text-align: left; background: white; color: var(--ink);
+      border: 1px solid var(--border); font-weight: 500; line-height: 1.45;
+    }
+    .search-result small {
+      display: block; margin-top: 4px; color: var(--muted); font-weight: 400;
+    }
     input, textarea {
       width: 100%; min-width: 0; padding: 12px;
       border: 1px solid var(--border); border-radius: 10px;
@@ -137,6 +147,7 @@
       <button type="submit" id="searchButton">Search</button>
       <button type="button" class="secondary" id="resetButton">Reset map</button>
     </form>
+    <div id="searchResults" class="search-results" aria-label="Search results"></div>
     <div id="status" class="status" role="status" aria-live="polite">
       Map centered on Savar. Select the map to inspect a location.
     </div>
@@ -199,6 +210,7 @@
     }).addTo(map);
 
     const status = document.getElementById("status");
+    const searchResults = document.getElementById("searchResults");
     const selectedLocation = document.getElementById("selectedLocation");
     const reportStatus = document.getElementById("reportStatus");
     let selectedPoint = null;
@@ -244,21 +256,42 @@
         if (!response.ok) throw new Error("Search service unavailable");
 
         const results = await response.json();
+        searchResults.replaceChildren();
+
         if (!results.length) {
           status.textContent = "No results found. Try another spelling or nearby landmark.";
           return;
         }
 
-        const first = results[0];
-        const point = [Number(first.lat), Number(first.lon)];
-        map.setView(point, 16);
+        status.textContent = "Found " + results.length +
+          " result(s). Choose the correct place below.";
+        results.forEach(function (result, index) {
+          const resultButton = document.createElement("button");
+          resultButton.type = "button";
+          resultButton.className = "search-result";
+          resultButton.textContent = result.display_name;
+          const detail = document.createElement("small");
+          detail.textContent = "Result " + (index + 1) + " · Tap to show on map";
+          resultButton.appendChild(detail);
+          resultButton.addEventListener("click", function () {
+            const point = [Number(result.lat), Number(result.lon)];
+            map.setView(point, 16);
 
-        if (resultMarker) map.removeLayer(resultMarker);
-        resultMarker = L.marker(point).addTo(map)
-          .bindPopup("<strong>Search result</strong><br>" +
-            escapeHtml(first.display_name)).openPopup();
+            if (resultMarker) map.removeLayer(resultMarker);
+            resultMarker = L.marker(point).addTo(map)
+              .bindPopup("<strong>Search result</strong><br>" +
+                escapeHtml(result.display_name)).openPopup();
 
-        status.textContent = "Showing the best matching result. Review its position before relying on it.";
+            selectedPoint = L.latLng(point[0], point[1]);
+            if (selectedMarker) map.removeLayer(selectedMarker);
+            selectedMarker = L.marker(selectedPoint).addTo(map);
+            selectedLocation.textContent = "Selected coordinates: " +
+              selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6);
+            reportStatus.textContent = "";
+            status.textContent = "Place selected. You can prepare a report for this location.";
+          });
+          searchResults.appendChild(resultButton);
+        });
       } catch (error) {
         status.textContent =
           "Search could not be completed. The map itself may still be used; try again later.";
