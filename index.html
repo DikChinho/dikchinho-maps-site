@@ -58,10 +58,38 @@
     }
     .intro p { margin: 0; color: var(--muted); font-size: 15px; line-height: 1.65; }
     .search {
-      display: flex; gap: 10px; margin: 0 0 12px; padding: 10px;
-      border: 1px solid var(--border); border-radius: 18px;
-      background: var(--surface); box-shadow: 0 5px 22px rgba(20,49,39,.035);
+      display: flex; align-items: center; gap: 8px; margin: 0 0 14px;
+      padding: 7px; max-width: 1040px; min-height: 70px;
+      border: 1px solid #dce6df; border-radius: 17px;
+      background: #fff; box-shadow: 0 8px 28px rgba(21, 55, 42, .075);
+      transition: border-color .18s, box-shadow .18s;
     }
+    .search:focus-within {
+      border-color: #86ad99;
+      box-shadow: 0 0 0 4px rgba(66, 128, 96, .10), 0 8px 28px rgba(21, 55, 42, .075);
+    }
+    .search-icon {
+      flex: 0 0 44px; width: 44px; height: 44px; margin-left: 2px;
+      display: grid; place-items: center; color: #5c796b;
+      background: #f0f5f1; border-radius: 12px;
+    }
+    .search-icon svg { width: 20px; height: 20px; display: block; }
+    .search-field { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .search-label { color: #718279; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .search input {
+      width: 100%; min-width: 0; padding: 3px 0; border: 0; border-radius: 0;
+      background: transparent; box-shadow: none; outline: none;
+      color: var(--ink); font-size: 15px; font-weight: 500;
+    }
+    .search input:focus { border: 0; box-shadow: none; background: transparent; }
+    .search input::placeholder { color: #9aa79f; font-weight: 400; }
+    .search .search-submit {
+      min-height: 52px; padding: 0 22px; border-radius: 12px;
+      display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+      font-size: 13px; box-shadow: 0 4px 10px rgba(18,60,53,.13);
+    }
+    .search .search-submit svg { width: 17px; height: 17px; }
+    .search .search-reset { min-height: 48px; padding: 0 15px; border-radius: 11px; font-size: 12px; }
     input, textarea {
       width: 100%; min-width: 0; padding: 13px 15px;
       border: 1px solid var(--border); border-radius: 11px;
@@ -142,8 +170,8 @@
     .leaflet-popup-content { line-height: 1.6; font-family: 'DM Sans', sans-serif; }
     .leaflet-popup-content-wrapper { border-radius: 12px; }
     @media (min-width: 900px) {
-      .search { max-width: 980px; }
-      .status { max-width: 980px; }
+      .search { max-width: 1040px; }
+      .status { max-width: 1040px; }
     }
     @media (max-width: 620px) {
       header { padding: 14px 16px; min-height: 72px; }
@@ -155,9 +183,13 @@
       .intro { margin-bottom: 19px; }
       .intro h2 { font-size: 27px; }
       .intro p { font-size: 13px; }
-      .search { flex-wrap: wrap; padding: 8px; gap: 7px; border-radius: 14px; }
-      .search input { flex: 1 1 100%; }
-      .search button { flex: 1; padding: 11px 9px; }
+      .search { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 8px; padding: 9px; border-radius: 15px; }
+      .search-icon { width: 40px; height: 40px; flex-basis: 40px; margin-left: 0; }
+      .search-field { align-self: center; }
+      .search-label { font-size: 9px; }
+      .search input { font-size: 14px; }
+      .search .search-submit { grid-column: 1 / -1; min-height: 46px; width: 100%; }
+      .search .search-reset { grid-column: 1 / -1; min-height: 40px; width: 100%; }
       .map-actions { gap: 7px; }
       .map-actions button { flex: 1 1 auto; padding: 11px 10px; font-size: 12px; }
       .map-wrap { border-radius: 15px; }
@@ -188,12 +220,22 @@
       <p>Search for a place, locate yourself, and plan a driving route.</p>
     </section>
 
-    <form id="searchForm" class="search">
-      <input id="searchInput" type="search"
-        placeholder="Search a place or address…"
-        aria-label="Search a place or address">
-      <button type="submit" id="searchButton">Search</button>
-      <button type="button" class="secondary" id="resetButton">Reset map</button>
+    <form id="searchForm" class="search" role="search">
+      <div class="search-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg>
+      </div>
+      <div class="search-field">
+        <label class="search-label" for="searchInput">Explore places</label>
+        <input id="searchInput" type="search"
+          placeholder="Search an address, landmark or area"
+          aria-label="Search a place or address"
+          autocomplete="off">
+      </div>
+      <button type="submit" id="searchButton" class="search-submit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 4.2 4.2"></path></svg>
+        <span>Search</span>
+      </button>
+      <button type="button" class="secondary search-reset" id="resetButton">Reset map</button>
     </form>
     <div id="searchResults" class="search-results" aria-label="Search results"></div>
     <div id="status" class="status" role="status" aria-live="polite">
