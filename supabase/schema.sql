@@ -104,11 +104,11 @@ alter table public.road_report_votes enable row level security;
 -- for trusted ingestion/moderation services, not browser clients.
 drop policy if exists "public_read_road_segments" on public.road_segments;
 create policy "public_read_road_segments"
-  on public.road_segments for select to anon, authenticated using (true);
+  on public.road_segments for select to anon, authenticated using (verified_status in ('community_checked','field_verified'));
 
 drop policy if exists "public_read_place_names" on public.place_names;
 create policy "public_read_place_names"
-  on public.place_names for select to anon, authenticated using (true);
+  on public.place_names for select to anon, authenticated using (verified_status in ('community_checked','field_verified'));
 
 -- Only unexpired, non-rejected road reports are visible to the public.
 drop policy if exists "public_read_active_road_reports" on public.road_reports;
@@ -127,10 +127,6 @@ create policy "authenticated_create_road_reports"
     and expires_at <= now() + interval '7 days'
   );
 
-drop policy if exists "authenticated_read_road_report_votes" on public.road_report_votes;
-create policy "authenticated_read_road_report_votes"
-  on public.road_report_votes for select to authenticated using (true);
-
 drop policy if exists "authenticated_vote_road_reports" on public.road_report_votes;
 create policy "authenticated_vote_road_reports"
   on public.road_report_votes for insert to authenticated
@@ -143,3 +139,17 @@ create policy "users_remove_own_road_report_votes"
 
 -- No update/delete policy is intentionally provided for road reports and road
 -- reference data. Add moderated server-side workflows before enabling edits.
+
+-- Explicit column grants keep report authors' auth UUIDs private. Policies alone
+-- are not grants; both privileges and RLS must allow a request.
+grant select on public.road_segments, public.place_names to anon, authenticated;
+
+grant select (id, kind, details, severity, status, location, created_at, expires_at)
+  on public.road_reports to anon, authenticated;
+grant insert (kind, details, severity, location, expires_at)
+  on public.road_reports to authenticated;
+
+-- Votes can be submitted/removed by their owner, but individual voter IDs are
+-- not readable through the Data API.
+grant insert (report_id, user_id, vote) on public.road_report_votes to authenticated;
+grant delete on public.road_report_votes to authenticated;
