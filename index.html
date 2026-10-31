@@ -92,6 +92,11 @@
       background: white; border-radius: 9px; padding: 8px 11px;
       font-size: 12px; box-shadow: 0 1px 8px #0002;
     }
+    .map-actions {
+      display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 12px;
+    }
+    .map-actions button { font-size: 13px; }
+    .map-actions button[aria-pressed="true"] { background: #b88622; color: #172e27; }
     .tools {
       display: grid; grid-template-columns: repeat(3, 1fr);
       gap: 10px; margin-top: 14px;
@@ -150,6 +155,12 @@
     <div id="searchResults" class="search-results" aria-label="Search results"></div>
     <div id="status" class="status" role="status" aria-live="polite">
       Map centered on Savar. Select the map to inspect a location.
+    </div>
+
+    <div class="map-actions" aria-label="Map tools">
+      <button type="button" id="locateButton">◎ My location</button>
+      <button type="button" id="routeButton" aria-pressed="false">↗ Plan a route</button>
+      <button type="button" class="secondary" id="clearRouteButton">Clear route</button>
     </div>
 
     <div class="map-wrap">
@@ -226,8 +237,104 @@
     let selectedMarker = null;
     let resultMarker = null;
     let lastSearchAt = 0;
+    let routeMode = false;
+    let routePoints = [];
+    let routeMarkers = [];
+    let routeLine = null;
+
+    document.getElementById("locateButton").addEventListener("click", function () {
+      if (!navigator.geolocation) {
+        status.textContent = "Location is not supported by this browser.";
+        return;
+      }
+      status.textContent = "Requesting your location… Allow location access if prompted.";
+      navigator.geolocation.getCurrentPosition(function (position) {
+        const point = [position.coords.latitude, position.coords.longitude];
+        map.setView(point, 16);
+        if (resultMarker) map.removeLayer(resultMarker);
+        resultMarker = L.marker(point).addTo(map).bindPopup("Your current location").openPopup();
+        selectedPoint = L.latLng(point[0], point[1]);
+        if (selectedMarker) map.removeLayer(selectedMarker);
+        selectedMarker = L.marker(selectedPoint).addTo(map);
+        selectedLocation.textContent = "Selected coordinates: " +
+          selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6);
+        status.textContent = "Your location is shown on the map.";
+      }, function () {
+        status.textContent = "Could not access your location. Check browser permission and try again.";
+      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    });
+
+    document.getElementById("routeButton").addEventListener("click", function () {
+      routeMode = !routeMode;
+      this.setAttribute("aria-pressed", String(routeMode));
+      this.textContent = routeMode ? "Choose route points…" : "↗ Plan a route";
+      routePoints = [];
+      status.textContent = routeMode
+        ? "Tap the map once for the starting point, then tap your destination."
+        : "Route selection cancelled.";
+    });
+
+    document.getElementById("clearRouteButton").addEventListener("click", clearRoute);
+
+    function clearRoute() {
+      if (routeLine) map.removeLayer(routeLine);
+      routeLine = null;
+      routeMarkers.forEach(marker => map.removeLayer(marker));
+      routeMarkers = [];
+      routePoints = [];
+      routeMode = false;
+      const routeButton = document.getElementById("routeButton");
+      routeButton.setAttribute("aria-pressed", "false");
+      routeButton.textContent = "↗ Plan a route";
+      status.textContent = "Route cleared.";
+    }
+
+    async function drawRoute(start, end) {
+      status.textContent = "Finding a driving route…";
+      try {
+        const coords = start.lng + "," + start.lat + ";" + end.lng + "," + end.lat;
+        const url = "https://router.project-osrm.org/route/v1/driving/" + coords +
+          "?overview=full&geometries=geojson";
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Routing service unavailable");
+        const data = await response.json();
+        if (data.code !== "Ok" || !data.routes || !data.routes.length) {
+          throw new Error("No route found");
+        }
+        const route = data.routes[0];
+        routeLine = L.geoJSON(route.geometry, {
+          style: { color: "#1769aa", weight: 6, opacity: 0.85 }
+        }).addTo(map);
+        map.fitBounds(routeLine.getBounds(), { padding: [28, 28] });
+        const km = (route.distance / 1000).toFixed(1);
+        const mins = Math.round(route.duration / 60);
+        status.textContent = "Driving route: " + km + " km · estimated " +
+          (mins >= 60 ? Math.floor(mins / 60) + " hr " + (mins % 60) + " min" : mins + " min") +
+          ". Estimates may differ from real traffic.";
+      } catch (error) {
+        status.textContent = "Could not calculate a route. Try nearby points or try again later.";
+      }
+    }
 
     map.on("click", function (event) {
+      if (routeMode) {
+        routePoints.push(event.latlng);
+        const marker = L.marker(event.latlng).addTo(map)
+          .bindPopup(routePoints.length === 1 ? "Route start" : "Route destination")
+          .openPopup();
+        routeMarkers.push(marker);
+        if (routePoints.length === 1) {
+          status.textContent = "Start selected. Now tap the destination.";
+          return;
+        }
+        const start = routePoints[0];
+        const end = routePoints[1];
+        routeMode = false;
+        document.getElementById("routeButton").setAttribute("aria-pressed", "false");
+        document.getElementById("routeButton").textContent = "↗ Plan a route";
+        drawRoute(start, end);
+        return;
+      }
       selectedPoint = event.latlng;
       if (selectedMarker) map.removeLayer(selectedMarker);
 
