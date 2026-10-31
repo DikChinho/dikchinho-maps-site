@@ -257,7 +257,8 @@ $('#frombtn').onclick=()=>search('start');$('#fromq').onkeydown=e=>{if(e.key==='
 $('#tobtn').onclick=()=>search('dest');$('#toq').onkeydown=e=>{if(e.key==='Enter')search('dest')};
 $('#navtoggle').onclick=()=>{const box=$('#navbox');box.hidden=!box.hidden;$('#navtoggle').classList.toggle('on',!box.hidden);if(!box.hidden){$('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus()}};
 
-$('#theme').onclick=()=>{S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);$('#theme').textContent=S.dark?'☀':'◐'};\n$('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
+$('#theme').onclick=()=>{S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);$('#theme').textContent=S.dark?'☀':'◐'};
+$('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
 $('#vc').onclick=()=>{S.voice=!S.voice;if(!S.voice)try{speechSynthesis.cancel()}catch(e){}ui()};
 $('#lang').onclick=()=>{S.lang=bn()?'en':'bn';ui();if(S.nav&&!S.nav.done)onPos(S.me)};
 // ---------- Navigation ----------
