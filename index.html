@@ -238,11 +238,20 @@ function renderPlaces(places,q,target='dest'){
 }
 function navStatus(){const a=S.start?S.startName:'—',b=S.dest?S.destName:'—';$('#navstatus').textContent=t('from')+': '+a+' → '+t('to')+': '+b}
 
-async function fetchRoutes(a,b){const r=await fetch(`${CFG.route[S.mode]}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`),j=await r.json();
- if(j.code!=='Ok')throw 0;return j.routes.map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R))}
-async function plan(){const a=S.start||S.me;ui();if(!a||!S.dest)return;
- try{S.routes=await fetchRoutes(a,S.dest);S.sel=0;drawRoutes();ui();map.fitBounds(L.polyline(S.routes[0].ll).getBounds(),pad())}catch(e){S.routes=[];drawRoutes();ui();toast(t('fail'))}}
-async function routeFromCurrentLocation(){if(!S.dest)return toast(t('pick'));if(S.start||S.me){await plan();return}if(!navigator.geolocation)return toast(t('noloc'));toast(bn()?'রুট তৈরি করতে আপনার অবস্থানের অনুমতি দিন':'Allow location access to calculate a route');navigator.geolocation.getCurrentPosition(async p=>{S.me=[p.coords.latitude,p.coords.longitude];meMarker();await plan();if(S.routes.length)startNav(false)},()=>toast(t('noloc')),{enableHighAccuracy:true,timeout:15000,maximumAge:10000})}
+async function fetchRoutes(a,b){
+ const base=CFG.route[S.mode],url=`${base}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`;
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),18000);
+ try{
+  const r=await fetch(url,{signal:ctl.signal});
+  if(!r.ok)throw new Error('Routing server HTTP '+r.status);
+  const j=await r.json();
+  if(j.code!=='Ok'||!Array.isArray(j.routes)||!j.routes.length)throw new Error(j.message||j.code||'No route returned');
+  return j.routes.filter(R=>R.geometry&&Array.isArray(R.geometry.coordinates)&&R.geometry.coordinates.length>1&&R.legs&&R.legs[0]&&Array.isArray(R.legs[0].steps)).map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R)).filter(R=>R.ll.length>1);
+ }finally{clearTimeout(timer)}
+}
+async function plan(){const a=S.start||S.me;ui();if(!a||!S.dest)return false;
+ try{S.routes=await fetchRoutes(a,S.dest);if(!S.routes.length)throw new Error('No usable route');S.sel=0;drawRoutes();ui();map.fitBounds(L.polyline(S.routes[0].ll).getBounds(),pad());return true}catch(e){S.routes=[];drawRoutes();ui();toast(t('fail'));return false}}
+async function routeFromCurrentLocation(){if(!S.dest)return toast(t('pick'));if(S.start||S.me){if(await plan())startNav(false);return}if(!navigator.geolocation)return toast(t('noloc'));toast(bn()?'রুট তৈরি করতে আপনার অবস্থানের অনুমতি দিন':'Allow location access to calculate a route');navigator.geolocation.getCurrentPosition(async p=>{S.me=[p.coords.latitude,p.coords.longitude];meMarker();if(await plan())startNav(false)},()=>toast(t('noloc')),{enableHighAccuracy:true,timeout:15000,maximumAge:10000})}
 function setStart(ll,n){stopNav();S.start=ll;S.startName=n||t('pin');pins();plan()}
 function setDest(ll,n){stopNav();S.dest=ll;S.destName=n||t('pin');pins();plan()}
 function locate(){if(!navigator.geolocation)return toast(t('noloc'));navigator.geolocation.getCurrentPosition(p=>{S.me=[p.coords.latitude,p.coords.longitude];S.start=null;meMarker();pins();map.flyTo(S.me,15);plan()},()=>toast(t('noloc')),{enableHighAccuracy:true,timeout:10000})}
@@ -285,7 +294,7 @@ $('#toq').addEventListener('input',()=>{clearTimeout(autoSearchTimers.dest);cons
 $('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus();
 
 $('#theme').onclick=()=>{S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);$('#theme').textContent=S.dark?'☀':'◐'};
-$('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
+$('#me').onclick=locate;$('#go').onclick=()=>{if(!S.dest)return toast(t('pick'));if(!S.routes.length){routeFromCurrentLocation();return}startNav(false)};$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
 $('#vc').onclick=()=>{S.voice=!S.voice;if(!S.voice)try{speechSynthesis.cancel()}catch(e){}ui()};
 $('#lang').onclick=()=>{S.lang=bn()?'en':'bn';ui();if(S.nav&&!S.nav.done)onPos(S.me)};
 // ---------- Navigation ----------
