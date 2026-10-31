@@ -201,7 +201,16 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const savar = [23.8433, 90.2517];
-    const map = L.map("map").setView(savar, 13);
+    // Keep the initial map focused on Bangladesh and prevent zooming out to the whole world.
+    const bangladeshBounds = L.latLngBounds(
+      L.latLng(20.55, 88.00),
+      L.latLng(26.75, 92.75)
+    );
+    const map = L.map("map", {
+      minZoom: 7,
+      maxBounds: bangladeshBounds,
+      maxBoundsViscosity: 0.8
+    }).setView(savar, 13);
 
     L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 19,
