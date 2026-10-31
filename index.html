@@ -147,6 +147,7 @@ body{font-family:Inter,"Hind Siliguri",system-ui,sans-serif;color:var(--ink)}
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="lg" viewBox="0 0 256 256"><rect width="256" height="256" rx="58" fill="#123b32"/><circle cx="128" cy="128" r="96" fill="none" stroke="#1d5a4b" stroke-width="3"/><circle cx="128" cy="128" r="64" fill="none" stroke="#1d5a4b" stroke-width="3"/><path d="M44 206C76 176 98 216 128 194" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-dasharray="1 17"/><path d="M128 198C128 198 74 146 74 104a54 54 0 1 1 108 0c0 42-54 94-54 94z" fill="#f2b134"/><circle cx="128" cy="104" r="24" fill="#123b32"/><path d="M128 88l11 24-11-6-11 6z" fill="#fff"/></symbol></svg>
 <div id="map" aria-label="Map"></div>
+<div id="boot-error" role="alert" hidden style="position:fixed;z-index:99999;top:12px;left:12px;right:12px;padding:14px 16px;border-radius:12px;background:#8f241f;color:white;font:600 14px/1.45 system-ui;box-shadow:0 5px 24px #0004"></div>
 <button id="tog" aria-label="Show or hide panel">☰</button>
 <div class="fab"><button id="lyr" aria-label="Satellite or map">🛰</button><button id="loc" aria-label="My location">◎</button></div>
 <div id="banner" hidden><div id="bg"></div><div><div id="bd"></div><div id="bt"></div></div><div id="br"></div></div>
@@ -178,6 +179,11 @@ body{font-family:Inter,"Hind Siliguri",system-ui,sans-serif;color:var(--ink)}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
+<script>
+window.addEventListener('error',function(ev){var box=document.getElementById('boot-error');if(box&&ev&&ev.message){box.hidden=false;box.textContent='DikChinho could not start: '+ev.message+'. Reload the page; if it continues, a required script may be unavailable.'}});
+window.addEventListener('unhandledrejection',function(){var box=document.getElementById('boot-error');if(box){box.hidden=false;box.textContent='A map or navigation service did not respond. Check your connection and retry.'}});
+setTimeout(function(){if(!window.L){var box=document.getElementById('boot-error');if(box){box.hidden=false;box.textContent='The map library did not load. Check your connection or script blocker, then reload.'}}},4000);
+</script>
 <script>
 // ---------- Settings: swap these URLs when you host your own tiles, routing and search ----------
 const CFG={center:[23.8583,90.2667],zoom:13,
