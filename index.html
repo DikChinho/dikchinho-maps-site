@@ -91,7 +91,7 @@ body.closed #ui{transform:translateX(-104%)}body.closed #tog{left:12px}.navmode 
 <script>
 // ---------- Settings: swap these URLs when you host your own tiles, routing and search ----------
 const CFG={center:[23.8583,90.2667],zoom:13,
- tiles:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+ tiles:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
  search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  route:{car:'https://routing.openstreetmap.de/routed-car/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'}};
 const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
@@ -111,7 +111,7 @@ let wl=null;const lock=async()=>{try{wl=await navigator.wakeLock.request('screen
 // ---------- Map ----------
 const map=L.map('map',{zoomControl:false}).setView(CFG.center,CFG.zoom);
 L.control.zoom({position:'topright'}).addTo(map);
-const base=L.tileLayer(CFG.tiles,{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · Routing: OSRM'}).addTo(map);
+const base=L.tileLayer(CFG.tiles,{subdomains:'abcd',maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a> · Routing: OSRM'}).addTo(map);
 const imagery=L.tileLayer(CFG.sat,{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'});
 const LR=L.layerGroup().addTo(map),LP=L.layerGroup().addTo(map);let meM=null;
 const pad=()=>innerWidth>760?{paddingTopLeft:[400,70],paddingBottomRight:[50,50]}:{paddingTopLeft:[24,90],paddingBottomRight:[24,Math.round(innerHeight*.5)]};
@@ -122,11 +122,30 @@ function drawRoutes(){LR.clearLayers();
  S.routes.forEach((R,i)=>{if(i!==S.sel)L.polyline(R.ll,{color:'#7b8fa8',weight:7,opacity:.85,dashArray:'8 8'}).on('click',()=>{S.sel=i;drawRoutes();ui()}).addTo(LR)});
  const R=S.routes[S.sel];if(R){L.polyline(R.ll,{color:'#fff',weight:12}).addTo(LR);L.polyline(R.ll,{color:'#0f7ea8',weight:7}).addTo(LR)}}
 // ---------- Search & routing ----------
-async function search(){const q=$('#q').value.trim();if(!q)return;const c=map.getCenter(),box=[c.lng-.6,c.lat+.6,c.lng+.6,c.lat-.6].join(',');
- try{const r=await fetch(`${CFG.search}?format=jsonv2&limit=6&countrycodes=bd&accept-language=bn,en&viewbox=${box}&q=${encodeURIComponent(q)}`);const j=await r.json();
-  $('#results').innerHTML=j.length?j.map((p,i)=>`<div class="res" data-i="${i}"><span>${esc(p.display_name.split(',').slice(0,2).join(','))}<small>${esc(p.display_name.split(',').slice(2,4).join(','))}</small></span><button data-s="${i}">${t('setstart')}</button></div>`).join(''):`<p class="note">${t('nores')}</p>`;
-  $('#results').onclick=e=>{const b=e.target.closest('[data-s]'),d=e.target.closest('[data-i]');if(!d)return;const p=j[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.display_name.split(',')[0];
-   $('#results').innerHTML='';map.setView(ll,15);if(b)setStart(ll,nm);else setDest(ll,nm)}}catch(e){toast(t('fail'))}}
+async function search(){
+ const q=$('#q').value.trim();if(!q)return;
+ $('#results').innerHTML='<p class="note">Searching…</p>';
+ const enc=encodeURIComponent(q),c=map.getCenter(),box=[c.lng-.45,c.lat+.45,c.lng+.45,c.lat-.45].join(',');
+ let places=[];
+ // Try Nominatim first, with a location bias but without requiring a strict bounding box.
+ try{
+  const u=`${CFG.search}?format=jsonv2&addressdetails=1&limit=8&countrycodes=bd&accept-language=${bn()?'bn':'en'}&q=${enc}`;
+  const r=await fetch(u);if(r.ok)places=await r.json();
+ }catch(e){}
+ // Photon often finds local businesses and place names that the first index misses.
+ if(!places.length){try{
+  const r=await fetch(`https://photon.komoot.io/api/?q=${enc}&limit=8&lat=${c.lat}&lon=${c.lng}&lang=${bn()?'en':'en'}`);
+  if(r.ok){const j=await r.json();places=(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],display_name:[f.properties.name,f.properties.street,f.properties.district,f.properties.city,f.properties.state,f.properties.country].filter(Boolean).join(', '),name:f.properties.name||''}));}
+ }catch(e){}}
+ if(!places.length){
+  // One broad final search can recover results for a common place name.
+  try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&accept-language=en&q=${enc}%2C%20Bangladesh`);if(r.ok)places=await r.json()}catch(e){}
+ }
+ $('#results').innerHTML=places.length?places.map((p,i)=>`<div class="res" data-i="${i}"><span>${esc(p.display_name||p.name||q)}<small>${esc([p.type,p.class].filter(Boolean).join(' · '))}</small></span><button data-s="${i}">${t('setstart')}</button></div>`).join(''):`<p class="note">${t('nores')} Try a nearby landmark, area, or spelling variation.</p>`;
+ $('#results').onclick=e=>{const b=e.target.closest('[data-s]'),d=e.target.closest('[data-i]');if(!d)return;const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||p.display_name.split(',')[0];
+  if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;
+  $('#results').innerHTML='';map.flyTo(ll,17);popup(ll,nm,p.display_name);if(b)setStart(ll,nm);else setDest(ll,nm)};
+}
 async function fetchRoutes(a,b){const r=await fetch(`${CFG.route[S.mode]}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`),j=await r.json();
  if(j.code!=='Ok')throw 0;return j.routes.map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R))}
 async function plan(){const a=S.start||S.me;ui();if(!a||!S.dest)return;
