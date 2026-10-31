@@ -97,6 +97,20 @@
     }
     .map-actions button { font-size: 13px; }
     .map-actions button[aria-pressed="true"] { background: #b88622; color: #172e27; }
+    .nearby-panel {
+      margin: 12px 0; padding: 14px; background: white;
+      border: 1px solid var(--border); border-radius: 13px;
+    }
+    .nearby-panel h3 { margin: 0 0 5px; font-size: 16px; }
+    .nearby-panel p { margin: 0 0 10px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+    .nearby-categories { display: flex; flex-wrap: wrap; gap: 8px; }
+    .nearby-categories button { font-size: 13px; }
+    .nearby-list { display: grid; gap: 7px; margin-top: 12px; }
+    .nearby-item {
+      width: 100%; text-align: left; background: #f8faf7; color: var(--ink);
+      border: 1px solid var(--border); font-weight: 500; line-height: 1.4;
+    }
+    .nearby-item small { display: block; color: var(--muted); font-weight: 400; margin-top: 3px; }
     .tools {
       display: grid; grid-template-columns: repeat(3, 1fr);
       gap: 10px; margin-top: 14px;
@@ -162,6 +176,21 @@
       <button type="button" id="routeButton" aria-pressed="false">↗ Plan a route</button>
       <button type="button" class="secondary" id="clearRouteButton">Clear route</button>
     </div>
+
+    <section class="nearby-panel" aria-labelledby="nearbyHeading">
+      <h3 id="nearbyHeading">Find nearby places</h3>
+      <p>Explore OpenStreetMap places around the map centre. Move the map to another area before searching.</p>
+      <div class="nearby-categories">
+        <button type="button" data-nearby="hospital">Hospitals & clinics</button>
+        <button type="button" data-nearby="pharmacy">Pharmacies</button>
+        <button type="button" data-nearby="school">Schools</button>
+        <button type="button" data-nearby="market">Markets & shops</button>
+        <button type="button" data-nearby="transport">Bus & transit</button>
+        <button type="button" class="secondary" id="clearNearbyButton">Clear places</button>
+      </div>
+      <div id="nearbyStatus" class="status" role="status" aria-live="polite"></div>
+      <div id="nearbyList" class="nearby-list"></div>
+    </section>
 
     <div class="map-wrap">
       <div class="map-label">Savar · Bangladesh</div>
@@ -241,6 +270,10 @@
     let routePoints = [];
     let routeMarkers = [];
     let routeLine = null;
+    const nearbyLayer = L.layerGroup().addTo(map);
+    const nearbyStatus = document.getElementById("nearbyStatus");
+    const nearbyList = document.getElementById("nearbyList");
+    let nearbyRequestRunning = false;
 
     let locationWatchId = null;
     let bestLocationAccuracy = Infinity;
@@ -327,6 +360,100 @@
           finishLocationSearch("Location failed (error " + error.code + "). Check browser and device location settings.");
         }
       }, { enableHighAccuracy: true, timeout: 30000, maximumAge: 0 });
+    });
+
+    const nearbyQueries = {
+      hospital: 'nwr["amenity"~"^(hospital|clinic|doctors)$"](around:1800,{lat},{lon});',
+      pharmacy: 'nwr["amenity"="pharmacy"](around:1800,{lat},{lon});',
+      school: 'nwr["amenity"~"^(school|college|university|kindergarten)$"](around:1800,{lat},{lon});',
+      market: 'nwr["shop"](around:1800,{lat},{lon});nwr["amenity"~"^(marketplace|supermarket)$"](around:1800,{lat},{lon});',
+      transport: 'nwr["highway"="bus_stop"](around:1800,{lat},{lon});nwr["public_transport"~"^(platform|station|stop_position)$"](around:1800,{lat},{lon});'
+    };
+    const nearbyLabels = {
+      hospital: "Hospitals & clinics", pharmacy: "Pharmacies",
+      school: "Schools", market: "Markets & shops", transport: "Bus & transit"
+    };
+
+    document.querySelectorAll("[data-nearby]").forEach(function (button) {
+      button.addEventListener("click", async function () {
+        if (nearbyRequestRunning) return;
+        const category = button.dataset.nearby;
+        const center = map.getCenter();
+        const queryBody = nearbyQueries[category]
+          .replaceAll("{lat}", center.lat.toFixed(6))
+          .replaceAll("{lon}", center.lng.toFixed(6));
+        nearbyRequestRunning = true;
+        document.querySelectorAll("[data-nearby]").forEach(item => item.disabled = true);
+        nearbyStatus.textContent = "Searching for " + nearbyLabels[category].toLowerCase() + " near the map centre…";
+        nearbyList.replaceChildren();
+        nearbyLayer.clearLayers();
+
+        try {
+          const query = "[out:json][timeout:20];(" + queryBody + ");out center tags;";
+          const endpoint = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
+          const response = await fetch(endpoint);
+          if (!response.ok) throw new Error("Nearby places service is busy");
+          const data = await response.json();
+          const places = (data.elements || []).map(function (item) {
+            const lat = item.lat ?? item.center?.lat;
+            const lon = item.lon ?? item.center?.lon;
+            if (lat == null || lon == null) return null;
+            const tags = item.tags || {};
+            return {
+              lat, lon,
+              name: tags.name || tags["name:en"] || tags.brand || tags.operator || nearbyLabels[category],
+              detail: [tags.amenity, tags.shop, tags.highway, tags.public_transport, tags["addr:street"]]
+                .filter(Boolean).join(" · ")
+            };
+          }).filter(Boolean);
+
+          if (!places.length) {
+            nearbyStatus.textContent = "No mapped places found within about 1.8 km. Try another category or move the map.";
+            return;
+          }
+
+          places.sort((a,b) => a.name.localeCompare(b.name));
+          places.forEach(function (place, index) {
+            const marker = L.marker([place.lat, place.lon]).addTo(nearbyLayer);
+            const popup = document.createElement("div");
+            const name = document.createElement("strong");
+            name.textContent = place.name;
+            popup.appendChild(name);
+            if (place.detail) {
+              const detail = document.createElement("div");
+              detail.textContent = place.detail;
+              popup.appendChild(detail);
+            }
+            marker.bindPopup(popup);
+            const item = document.createElement("button");
+            item.type = "button";
+            item.className = "nearby-item";
+            item.textContent = place.name;
+            if (place.detail) {
+              const small = document.createElement("small");
+              small.textContent = place.detail;
+              item.appendChild(small);
+            }
+            item.addEventListener("click", function () {
+              map.setView([place.lat, place.lon], 17);
+              marker.openPopup();
+            });
+            if (index < 30) nearbyList.appendChild(item);
+          });
+          nearbyStatus.textContent = "Found " + places.length + " mapped place(s) within about 1.8 km. Showing up to 30 in the list.";
+        } catch (error) {
+          nearbyStatus.textContent = "Nearby search is temporarily unavailable. Please try again shortly; the map and place search still work.";
+        } finally {
+          nearbyRequestRunning = false;
+          document.querySelectorAll("[data-nearby]").forEach(item => item.disabled = false);
+        }
+      });
+    });
+
+    document.getElementById("clearNearbyButton").addEventListener("click", function () {
+      nearbyLayer.clearLayers();
+      nearbyList.replaceChildren();
+      nearbyStatus.textContent = "Nearby place markers cleared.";
     });
 
     document.getElementById("routeButton").addEventListener("click", function () {
