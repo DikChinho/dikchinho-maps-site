@@ -243,25 +243,61 @@
     let routeLine = null;
 
     document.getElementById("locateButton").addEventListener("click", function () {
-      if (!navigator.geolocation) {
-        status.textContent = "Location is not supported by this browser.";
+      if (!window.isSecureContext) {
+        status.textContent = "Location needs a secure HTTPS connection. Open the official GitHub Pages link.";
         return;
       }
-      status.textContent = "Requesting your location… Allow location access if prompted.";
-      navigator.geolocation.getCurrentPosition(function (position) {
+      if (!navigator.geolocation) {
+        status.textContent = "This browser does not support location access. Try an updated browser.";
+        return;
+      }
+
+      const locateButton = document.getElementById("locateButton");
+      locateButton.disabled = true;
+      status.textContent = "Requesting location permission… Check your browser’s address-bar permissions if no prompt appears.";
+
+      function showPosition(position) {
         const point = [position.coords.latitude, position.coords.longitude];
         map.setView(point, 16);
         if (resultMarker) map.removeLayer(resultMarker);
-        resultMarker = L.marker(point).addTo(map).bindPopup("Your current location").openPopup();
+        resultMarker = L.marker(point).addTo(map)
+          .bindPopup("Your current location").openPopup();
         selectedPoint = L.latLng(point[0], point[1]);
         if (selectedMarker) map.removeLayer(selectedMarker);
         selectedMarker = L.marker(selectedPoint).addTo(map);
         selectedLocation.textContent = "Selected coordinates: " +
           selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6);
-        status.textContent = "Your location is shown on the map.";
-      }, function () {
-        status.textContent = "Could not access your location. Check browser permission and try again.";
-      }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+        status.textContent = "Your location is shown on the map (accuracy about " +
+          Math.round(position.coords.accuracy) + " metres).";
+        locateButton.disabled = false;
+      }
+
+      function showLocationError(error) {
+        locateButton.disabled = false;
+        if (error.code === 1) {
+          status.textContent = "Location permission was denied. Click the site controls beside the address bar, allow Location, then press My location again.";
+        } else if (error.code === 2) {
+          status.textContent = "Your device could not determine a location. Turn on device location services and check your internet connection.";
+        } else if (error.code === 3) {
+          status.textContent = "Location request timed out. Try again near a window or check device location settings.";
+        } else {
+          status.textContent = "Location failed (error " + error.code + "). Check browser site permissions and device location settings, then retry.";
+        }
+      }
+
+      // A low-power request is often more reliable on laptops and desktop PCs.
+      navigator.geolocation.getCurrentPosition(showPosition, function (error) {
+        if (error.code === 1) {
+          showLocationError(error);
+          return;
+        }
+        status.textContent = "Trying a more accurate location request…";
+        navigator.geolocation.getCurrentPosition(showPosition, showLocationError, {
+          enableHighAccuracy: true,
+          timeout: 20000,
+          maximumAge: 120000
+        });
+      }, { enableHighAccuracy: false, timeout: 15000, maximumAge: 120000 });
     });
 
     document.getElementById("routeButton").addEventListener("click", function () {
