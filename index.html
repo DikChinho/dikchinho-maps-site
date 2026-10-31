@@ -197,37 +197,26 @@ function drawRoutes(){LR.clearLayers();
 let searchTarget='dest',searchSeq=0,autoSearchTimers={start:null,dest:null};
 async function search(target='dest'){
  searchTarget=target;
- const seq=++searchSeq;
- const input=target==='start'?'#fromq':'#toq';
- const q=$(input).value.trim();if(!q)return;
+ const seq=++searchSeq,input=target==='start'?'#fromq':'#toq',q=$(input).value.trim();
+ if(!q)return;
  const center=map.getCenter(),ctr=[center.lat,center.lng];
- const cm=q.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
+ const cm=q.match(/^(-?\\d+(?:\\.\\d+)?)\\s*[, ]\\s*(-?\\d+(?:\\.\\d+)?)$/);
  if(cm){let a=+cm[1],b=+cm[2];if(a>40)[a,b]=[b,a];renderPlaces([{lat:a,lon:b,name:t('pin'),display_name:a.toFixed(5)+', '+b.toFixed(5),type:'coordinates',country:'bd'}],q,target);return}
  $('#results').innerHTML='<p class="note">'+(T[S.lang].loading||'Searching Bangladesh…')+'</p>';
  const box='88.0,26.7,93.0,20.5';
- const queries=[q];
- if(q.includes(',')){const parts=q.split(',').map(x=>x.trim()).filter(Boolean);if(parts.length>1)queries.push(parts.slice(0,-1).join(' '));}
- const nominatim=await Promise.all([...new Set(queries)].map(query=>fetch(CFG.search+'?format=jsonv2&limit=10&addressdetails=1&accept-language=bn,en&countrycodes=bd&viewbox='+box+'&bounded=0&q='+encodeURIComponent(query)).then(r=>r.ok?r.json():[]).catch(()=>[])));
- const photonPromise=fetch(CFG.photon+'?limit=20&lat=23.8583&lon=90.2667&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state,f.properties.country].filter(Boolean).join(', '),type:f.properties.osm_value||'',country:String(f.properties.countrycode||'').toLowerCase()}))).catch(()=>[]);
- // Search named OSM buildings, shops, housing societies and landmarks as a third index.
- const overpassPromise=(async()=>{try{const safe=q.replace(/["\\()[\]{}.*+?^$|]/g,' ').slice(0,80);const query='[out:json][timeout:12];(nwr["name"~"'+safe+'",i](20.5,88,26.7,93););out center tags;';const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),13000);const resp=await fetch(CFG.overpass,{method:'POST',body:'data='+encodeURIComponent(query),headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},signal:ctl.signal});clearTimeout(timer);if(!resp.ok)return [];const data=await resp.json();return (data.elements||[]).map(el=>{const tags=el.tags||{},lat=el.lat??(el.center&&el.center.lat),lon=el.lon??(el.center&&el.center.lon);return {lat:lat,lon:lon,name:tags.name||tags['name:en']||tags['name:bn']||'',display_name:[tags.name||tags['name:en']||tags['name:bn'],tags['addr:suburb'],tags['addr:city']||tags['addr:district'],tags['addr:street'],tags['addr:housenumber'],'Bangladesh'].filter(Boolean).join(', '),type:tags.building?'building':tags.amenity||tags.shop||tags.office||tags.landuse||el.type,country:'bd'}}).filter(p=>Number.isFinite(+p.lat)&&Number.isFinite(+p.lon))}catch(e){return []}})();
- const [photon,overpass]=await Promise.all([photonPromise,overpassPromise]);
- const all=nominatim.flat().concat(photon,overpass).map(p=>({...p,country:String(p.country||p.address?.country_code||'').toLowerCase()})).filter(p=>(p.name||p.display_name)&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)&&+p.lat>=20.5&&+p.lat<=26.7&&+p.lon>=88&&+p.lon<=93);
- const norm=v=>String(v||'').toLocaleLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
- const z=norm(q),seen=[],places=[];
- for(const p of all){
-  const ll=[+p.lat,+p.lon],name=norm(p.name),address=norm(p.display_name);
-  if(seen.some(x=>(x.name===name&&hav(x.ll,ll)<250)||hav(x.ll,ll)<30))continue;
-  seen.push({name,ll});
-  const exact=name===z||address===z,starts=name.startsWith(z)||address.startsWith(z),contains=address.includes(z);
-  const local=norm(q.split(',').slice(1).join(' '));
-  const locality=local&&address.includes(local);
-  const score=(exact?-10000:0)+(starts?-3000:0)+(contains?-1000:0)+(locality?-500:0)+(p.country==='bd'?-500:0)+Math.min(hav(ctr,ll)/1000,500);
-  places.push({...p,lat:ll[0],lon:ll[1],_score:score});
- }
- places.sort((a,b)=>a._score-b._score);
+ const norm=v=>String(v||'').toLocaleLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();
+ const queries=[...new Set([q,...(q.includes(',')?[q.split(',').slice(0,-1).join(' ').trim()]:[])].filter(Boolean))].slice(0,2);
+ const timedFetch=async(url,ms=4800)=>{const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),ms);try{return await fetch(url,{signal:ctl.signal})}finally{clearTimeout(timer)}};
+ const photonPromise=timedFetch(CFG.photon+'?limit=12&lat='+ctr[0]+'&lon='+ctr[1]+'&q='+encodeURIComponent(q),4800).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state,f.properties.country].filter(Boolean).join(', '),type:f.properties.osm_value||'',country:String(f.properties.countrycode||'').toLowerCase()}))).catch(()=>[]);
+ const nominatimPromise=Promise.all(queries.map(query=>timedFetch(CFG.search+'?format=jsonv2&limit=8&addressdetails=1&accept-language=bn,en&countrycodes=bd&viewbox='+box+'&bounded=0&q='+encodeURIComponent(query),4800).then(r=>r.ok?r.json():[]).catch(()=>[])));
+ // Render results from the fast search providers first; do not wait for the slower Overpass building index.
+ const [photon,nominatim]=await Promise.all([photonPromise,nominatimPromise]);
  if(seq!==searchSeq)return;
- renderPlaces(places.slice(0,12),q,target);
+ const all=nominatim.flat().concat(photon).map(p=>({...p,country:String(p.country||p.address?.country_code||'').toLowerCase()})).filter(p=>(p.name||p.display_name)&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)&&+p.lat>=20.5&&+p.lat<=26.7&&+p.lon>=88&&+p.lon<=93);
+ const z=norm(q),seen=[],places=[];
+ for(const p of all){const ll=[+p.lat,+p.lon],name=norm(p.name),address=norm(p.display_name);if(seen.some(x=>(x.name===name&&hav(x.ll,ll)<250)||hav(x.ll,ll)<30))continue;seen.push({name,ll});const exact=name===z||address===z,starts=name.startsWith(z)||address.startsWith(z),contains=address.includes(z),local=norm(q.split(',').slice(1).join(' ')),locality=local&&address.includes(local);const score=(exact?-10000:0)+(starts?-3000:0)+(contains?-1000:0)+(locality?-500:0)+(p.country==='bd'?-500:0)+Math.min(hav(ctr,ll)/1000,500);places.push({...p,lat:ll[0],lon:ll[1],_score:score})}
+ places.sort((a,b)=>a._score-b._score);
+ if(seq===searchSeq)renderPlaces(places.slice(0,12),q,target);
 }
 function renderPlaces(places,q,target='dest'){
  const google='https://www.google.com/maps/search/'+encodeURIComponent(q+' Bangladesh');
