@@ -1,0 +1,13 @@
+{
+  "name": "DikChinho — Bangladesh Navigation",
+  "short_name": "DikChinho",
+  "description": "Bangladesh-first navigation, starting in Savar.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#102d28",
+  "theme_color": "#102d28",
+  "lang": "en-BD",
+  "categories": ["navigation", "travel", "maps"]
+}
