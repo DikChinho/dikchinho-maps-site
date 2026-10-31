@@ -110,6 +110,14 @@ body.closed #tog{left:16px}
  #banner{left:10px;right:58px;top:10px;padding:11px;border-radius:14px}
  #bd{font-size:22px}
 }
+/* Simpler map: clean street map by default, calmer controls and less visual clutter */
+#ui{width:370px;border-radius:16px;box-shadow:0 8px 28px rgba(16,45,40,.18)}
+.head{padding:13px 15px}
+.body{gap:10px}
+#map{background:#f4f6f4}
+.leaflet-control-zoom{border:0!important;box-shadow:0 2px 8px #0002!important}
+.leaflet-control-zoom a{border:0!important;color:#123b32!important}
+@media(max-width:760px){#ui{max-height:52vh;border-radius:16px}.body{gap:9px}}
 
 </style>
 </head>
@@ -171,8 +179,8 @@ L.control.zoom({position:'topright'}).addTo(map);
 const base=L.tileLayer(CFG.tiles,{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · Routing: OSRM'});
 const imagery=L.tileLayer(CFG.sat,{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'});
 let vec=null;try{if(typeof L.maplibreGL==='function')vec=L.maplibreGL({style:CFG.style,attribution:'© <a href="https://openfreemap.org">OpenFreeMap</a> · Data © OpenStreetMap contributors'})}catch(e){}
-const LY={vector:vec,osm:base,sat:imagery},ORD=['vector','osm','sat'].filter(k=>LY[k]);let cur=null;
-function setLayer(k){if(cur&&LY[cur])map.removeLayer(LY[cur]);try{LY[k].addTo(map)}catch(e){k='osm';LY.osm.addTo(map)}cur=k;const names={vector:'🏙',osm:'🗺',sat:'🛰'};$('#lyr').textContent=names[ORD[(ORD.indexOf(k)+1)%ORD.length]]||'🗺'}
+const LY={osm:base,sat:imagery};let cur=null;
+function setLayer(k){if(cur&&LY[cur])map.removeLayer(LY[cur]);if(!LY[k])k='osm';LY[k].addTo(map);cur=k;$('#lyr').textContent=k==='osm'?'🛰':'🗺';$('#lyr').title=k==='osm'?'Switch to satellite':'Switch to street map'}
 const LR=L.layerGroup().addTo(map),LP=L.layerGroup().addTo(map);let meM=null;
 const pad=()=>innerWidth>760?{paddingTopLeft:[400,70],paddingBottomRight:[50,50]}:{paddingTopLeft:[24,90],paddingBottomRight:[24,Math.round(innerHeight*.5)]};
 const dot=(ll,c,r=9)=>L.circleMarker(ll,{radius:r,color:'#fff',weight:3,fillColor:c,fillOpacity:1}).addTo(LP);
@@ -200,13 +208,13 @@ async function search(target='dest'){
  if(CFG.barikoi.key)jobs.push(fetch(CFG.barikoi.url+'?api_key='+encodeURIComponent(CFG.barikoi.key)+'&bangla=true&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{}).then(j=>(j.places||[]).map(p=>({lat:+p.latitude,lon:+p.longitude,name:(bn()&&p.address_bn)||p.address||'',display_name:[p.address,p.area,p.city].filter(Boolean).join(', '),type:p.pType||'',country:'bd'}))).catch(()=>[]));
  const lists=await Promise.all(jobs),all=lists.flat().filter(p=>(p.name||p.display_name)&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)),seen=[],places=[];
  all.forEach(p=>{const ll=[+p.lat,+p.lon],key=String(p.name||p.display_name).toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();if(seen.some(x=>(x.key===key&&hav(x.ll,ll)<200)||hav(x.ll,ll)<25))return;seen.push({key,ll});places.push({...p,lat:ll[0],lon:ll[1],_d:hav(ctr,ll)})});
- const z=q.toLowerCase();places.sort((a,b)=>((a.country==='bd'?0:1)-(b.country==='bd'?0:1))||((String(a.name||a.display_name).toLowerCase().startsWith(z)?0:1)-(String(b.name||b.display_name).toLowerCase().startsWith(z)?0:1))||a._d-b._d);
+ const norm=v=>String(v||'').toLocaleLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();const z=norm(q);const score=p=>{const n=norm(p.name),d=norm(p.display_name);let v=0;if(n===z)v-=1000;if(d===z)v-=900;if(n.startsWith(z))v-=500;if(d.startsWith(z))v-=350;if(d.split(' ').some(w=>w===z))v-=180;if(p.country==='bd'||p.country==='BD')v-=80;if(/city|town|village|suburb|district|county|state|administrative/i.test(p.type||p.class||''))v+=120;return v+Math.min(p._d/1000,100)};places.sort((a,b)=>score(a)-score(b));
  renderPlaces(places.slice(0,12),q,target)
 }
 function renderPlaces(places,q,target='dest'){
  $('#results').innerHTML=places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span>'+esc(p.display_name||p.name||q)+'<small>'+esc(p.type||p.class||'')+'</small></span><button data-pick="'+i+'">'+(target==='start'?t('from')+' ✓':target==='dest'?t('to')+' ✓':t('to'))+'</button></div>').join(''):'<p class="note">'+t('nores')+' <a href="https://www.google.com/maps/search/'+encodeURIComponent(q)+'" target="_blank" rel="noopener">Try Google Maps</a></p>';
  $('#results').onclick=e=>{const d=e.target.closest('[data-i]');if(!d)return;const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||String(p.display_name||q).split(',')[0];if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;
- $('#results').innerHTML='';map.flyTo(ll,17);
+ $('#results').innerHTML='';const kind=String(p.type||p.class||p.addresstype||'').toLowerCase();const zoom=/city|town|village|district|county|state|administrative/.test(kind)?14:/road|street|house|building|address/.test(kind)?18:17;map.flyTo(ll,zoom,{duration:0.8});
  if(target==='start'){S.start=ll;S.startName=nm;$('#fromq').value=p.display_name||nm;pins();plan();navStatus()}
  else if(target==='dest'){S.dest=ll;S.destName=nm;$('#toq').value=p.display_name||nm;pins();plan();navStatus()}
  else {popup(ll,nm,p.display_name);setDest(ll,nm)}
@@ -283,7 +291,7 @@ function arrive(){const n=S.nav;n.done=true;clearInterval(n.tm);if(n.w!=null)nav
 function stopNav(){const n=S.nav;if(!n)return;clearInterval(n.tm);if(n.w!=null)navigator.geolocation.clearWatch(n.w);try{speechSynthesis.cancel()}catch(e){}try{wl&&wl.release()}catch(e){}
  S.nav=null;document.body.classList.remove('navmode');$('#banner').hidden=true;map.invalidateSize();if(S.routes[0])map.fitBounds(L.polyline(S.routes[S.sel].ll).getBounds(),pad())}
 $('#tog').onclick=()=>document.body.classList.toggle('closed');
-let sat=false;$('#lyr').onclick=()=>setLayer(ORD[(ORD.indexOf(cur)+1)%ORD.length]);setLayer(ORD[0]);
+$('#lyr').onclick=()=>setLayer(cur==='osm'?'sat':'osm');setLayer('osm');
 $('#loc').onclick=locate;
 ui();
 </script>
