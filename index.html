@@ -172,7 +172,6 @@
     </div>
     <div class="map-credit">
       Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
-      · Map style © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>
     </div>
     <section id="routePanel" class="route-panel" aria-live="polite">
       <div id="routeSummary" class="route-summary">Driving directions</div>
@@ -192,7 +191,7 @@
     );
     const map = L.map("map", {
       minZoom: 7,
-      maxZoom: 20,
+      maxZoom: 19,
       maxBounds: bangladeshBounds,
       maxBoundsViscosity: 0.8,
       zoomControl: false,
@@ -201,10 +200,10 @@
     }).setView(savar, 13);
     L.control.zoom({ position: "topright" }).addTo(map);
 
-    // CARTO Voyager provides a cleaner road-and-label style.
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      subdomains: "abcd",
-      maxZoom: 20
+    // OpenStreetMap tiles: no CARTO API key is required.
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     }).addTo(map);
 
     const status = document.getElementById("status");
