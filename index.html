@@ -120,7 +120,7 @@ body.closed #tog{left:16px}
 <div class="fab"><button id="lyr" aria-label="Satellite or map">🛰</button><button id="loc" aria-label="My location">◎</button></div>
 <div id="banner" hidden><div id="bg"></div><div><div id="bd"></div><div id="bt"></div></div><div id="br"></div></div>
 <aside id="ui">
- <div class="head"><svg class="logo" aria-hidden="true"><use href="#lg"/></svg><div><h1>DikChinho<span> Maps</span></h1><p data-i="tag"></p></div><button class="lang" id="lang">বাংলা</button></div>
+ <div class="head"><svg class="logo" aria-hidden="true"><use href="#lg"/></svg><div><h1>DikChinho<span> Maps</span></h1><p data-i="tag"></p></div><button class="lang" id="lang">বাংলা</button><button class="lang" id="theme" title="Toggle dark mode" aria-label="Toggle dark mode">◐</button></div>
  <div class="body">
   <div class="row"><button class="btn" id="navtoggle" style="flex:1" data-i="planroute">⇄ Plan a route</button></div>
   <div id="navbox" hidden>
@@ -153,7 +153,7 @@ const CFG={center:[23.8583,90.2667],zoom:13,
  route:{car:'https://routing.openstreetmap.de/routed-car/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'}};
 const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',planroute:'⇄ Plan a route',find:'Find',fromsearch:'Starting point (e.g. home)',tosearch:'Destination (e.g. Dhaka airport)',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
 bn:{tag:'পথ চিনুন। জায়গা জানুন।',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',planroute:'⇄ পথ পরিকল্পনা',find:'খুঁজুন',fromsearch:'শুরুর স্থান (যেমন বাসা)',tosearch:'গন্তব্য (যেমন ঢাকা বিমানবন্দর)',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'ডেমো ড্রাইভ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',bike:'বাইক',foot:'হাঁটা',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'দ্রুততম',alt:'বিকল্প',steps:'দিকনির্দেশনা',pin:'নির্বাচিত স্থান',hint:'টিপ: ম্যাপের যেকোনো জায়গায় ট্যাপ করে স্থানটি দেখুন ও পথ জানুন। পুরো ম্যাপ দেখতে ☰ চাপুন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। ইন্টারনেট দেখুন বা অন্য মাধ্যম বেছে নিন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস',pick:'জায়গা খুঁজুন বা ম্যাপে ট্যাপ করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
-const S={lang:'en',voice:true,mode:'car',start:null,startName:'',dest:null,destName:'',me:null,routes:[],sel:0,nav:null};
+const S={lang:'en',voice:true,mode:'car',dark:false,start:null,startName:'',dest:null,destName:'',me:null,routes:[],sel:0,nav:null};
 const $=s=>document.querySelector(s),t=k=>T[S.lang][k]||k,bn=()=>S.lang==='bn';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num=x=>bn()?String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]):String(x);
@@ -240,7 +240,7 @@ const glyph=s=>({arrive:'⚑',depart:'●',roundabout:'⟳',rotary:'⟳'}[s.mane
 // ---------- Panel ----------
 function ui(){document.querySelectorAll('[data-i]').forEach(e=>{if(!e.dataset.i.match(/^\d+$/))e.textContent=t(e.dataset.i)});
  document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
- $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#navtoggle').textContent=t('planroute');$('#frombtn').textContent=t('find');$('#tobtn').textContent=t('find');$('#fromq').placeholder=t('fromsearch');$('#toq').placeholder=t('tosearch');$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');
+ $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#theme').textContent=S.dark?'☀':'◐';document.body.classList.toggle('dark',S.dark);$('#navtoggle').textContent=t('planroute');$('#frombtn').textContent=t('find');$('#tobtn').textContent=t('find');$('#fromq').placeholder=t('fromsearch');$('#toq').placeholder=t('tosearch');$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');
  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
  const a=S.start?S.startName:S.me?t('me').slice(2):'—';
  $('#sum').innerHTML=S.dest||S.start?`<span>${t('from')}: <b>${esc(a)}</b> → ${t('to')}: <b>${esc(S.destName||'—')}</b></span><span><button class="btn" id="swp">⇅</button> <button class="btn" id="clr">✕</button></span>`:`<span>${t('pick')}</span>`;
@@ -257,7 +257,7 @@ $('#frombtn').onclick=()=>search('start');$('#fromq').onkeydown=e=>{if(e.key==='
 $('#tobtn').onclick=()=>search('dest');$('#toq').onkeydown=e=>{if(e.key==='Enter')search('dest')};
 $('#navtoggle').onclick=()=>{const box=$('#navbox');box.hidden=!box.hidden;$('#navtoggle').classList.toggle('on',!box.hidden);if(!box.hidden){$('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus()}};
 
-$('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
+$('#theme').onclick=()=>{S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);$('#theme').textContent=S.dark?'☀':'◐'};\n$('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
 $('#vc').onclick=()=>{S.voice=!S.voice;if(!S.voice)try{speechSynthesis.cancel()}catch(e){}ui()};
 $('#lang').onclick=()=>{S.lang=bn()?'en':'bn';ui();if(S.nav&&!S.nav.done)onPos(S.me)};
 // ---------- Navigation ----------
