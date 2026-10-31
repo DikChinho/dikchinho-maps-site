@@ -223,6 +223,99 @@
     .route-connector span:last-child { height: 17px; border-left: 2px dashed #b8c9be; }
     .route-submit { min-height: 48px; display: inline-flex; align-items: center; justify-content: center; gap: 12px; padding: 0 18px; }
     .planner-note { margin: 13px 0 0; color: #89958e; font-size: 11px; line-height: 1.5; }
+
+    /* Polished interface refresh */
+    :root {
+      --green: #123d32;
+      --green-deep: #092720;
+      --green-soft: #e7f3ec;
+      --gold: #edc66f;
+      --paper: #f2f5f2;
+      --ink: #182a23;
+      --muted: #6d7e74;
+      --border: #dfe8e1;
+      --shadow: 0 20px 55px rgba(18, 50, 38, .11);
+    }
+    body { background: #f2f5f2; }
+    header {
+      min-height: 88px; padding-inline: clamp(18px, 5vw, 76px);
+      background: linear-gradient(112deg, #092720 0%, #123d32 58%, #1d5140 100%);
+      box-shadow: 0 5px 22px #09272018;
+    }
+    .logo { border-radius: 14px; background: linear-gradient(145deg,#f4d78c,#e5b64f); }
+    .area { background: #ffffff10; border-color: #ffffff26; }
+    main { max-width: 1560px; padding: clamp(20px, 3vw, 38px) clamp(14px, 3.2vw, 48px) 42px; }
+    .intro {
+      position: relative; isolation: isolate; overflow: hidden;
+      padding: clamp(24px, 3.6vw, 42px); margin-bottom: 22px;
+      border-radius: 24px; color: white;
+      background: radial-gradient(ellipse at 88% 15%, #397b5b 0, transparent 34%),
+                  linear-gradient(118deg, #0b2d25 0%, #174a39 68%, #1b5b43 100%);
+      box-shadow: 0 18px 42px #123c351f;
+    }
+    .intro::after {
+      content: "↗"; position: absolute; z-index: -1; right: 5%; top: -45px;
+      color: #ffffff0b; font: 800 clamp(150px, 24vw, 290px)/1 Manrope, sans-serif;
+      transform: rotate(-12deg); pointer-events: none;
+    }
+    .intro h2 { color: #fff; font-size: clamp(29px, 3.7vw, 45px); letter-spacing: -1.7px; max-width: 680px; }
+    .intro p { color: #d0e1d7; font-size: 14px; max-width: 620px; }
+    .search {
+      max-width: none; min-height: 78px; margin-bottom: 12px; padding: 9px;
+      border-radius: 18px; border-color: #d9e5dc; box-shadow: 0 9px 28px #163c2b0c;
+    }
+    .search-icon { background: #e9f3ec; color: #245b46; }
+    .search .search-submit { padding-inline: 25px; background: #174a39; }
+    .search .search-reset { padding-inline: 18px; }
+    .status {
+      max-width: none; min-height: 43px; margin: 12px 0 16px;
+      padding: 11px 15px; background: #eaf3ed; border-color: #d8e7dc;
+      color: #365b48; border-radius: 12px;
+    }
+    .map-actions { gap: 10px; margin: 17px 0 14px; }
+    .map-actions button {
+      min-height: 44px; padding: 0 17px; border-radius: 12px;
+      box-shadow: 0 4px 12px #143c2d0c;
+    }
+    .map-actions button.secondary { background: #fff; }
+    .map-wrap {
+      border-radius: 22px; border: 1px solid #d5e1d8;
+      box-shadow: 0 18px 45px #143b2d16; background: #e4ece6;
+    }
+    #map { height: min(72vh, 780px); min-height: 470px; }
+    .map-label {
+      top: 17px; left: 17px; padding: 11px 15px;
+      border-radius: 12px; box-shadow: 0 6px 22px #102d201a;
+    }
+    .leaflet-control-zoom { margin: 17px !important; border-radius: 12px !important; overflow: hidden; }
+    .leaflet-control-zoom a:first-child { border-radius: 0 !important; }
+    .leaflet-control-zoom a:last-child { border-radius: 0 !important; }
+    .route-planner, .route-panel {
+      border-color: #dce7df; border-radius: 18px;
+      box-shadow: 0 12px 32px #163b3210;
+    }
+    .route-planner { padding: clamp(17px, 2.5vw, 27px); }
+    .planner-icon { background: #e8f3eb; border: 1px solid #d9e9de; }
+    .route-field input { background: #f8faf8; }
+    .route-submit { border-radius: 11px; }
+    .search-result { border-radius: 12px; padding: 14px 16px; box-shadow: 0 3px 10px #183d2b08; }
+    .search-result:hover { border-color: #9dbdac; background: #f7fbf8; }
+    .map-credit { margin: 12px 4px 0; font-size: 11px; }
+    footer { margin-top: 14px; background: #f8faf8; }
+    @media (max-width: 620px) {
+      header { padding: 13px 14px; }
+      .area { max-width: 125px; line-height: 1.4; white-space: normal; }
+      main { padding: 19px 12px 28px; }
+      .intro { padding: 25px 21px; border-radius: 19px; }
+      .intro h2 { font-size: 29px; }
+      .search { min-height: 0; }
+      .search .search-submit { min-height: 47px; }
+      .map-actions button { border-radius: 11px; }
+      .map-wrap { border-radius: 16px; }
+      #map { height: 62vh; min-height: 390px; }
+      .leaflet-control-zoom { margin: 10px !important; }
+    }
+
     @media (max-width: 760px) {
       .route-planner { padding: 15px; }
       .route-form { grid-template-columns: minmax(0,1fr); gap: 10px; }
