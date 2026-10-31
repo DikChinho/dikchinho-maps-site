@@ -130,13 +130,12 @@ body.closed #tog{left:16px}
 <aside id="ui">
  <div class="head"><svg class="logo" aria-hidden="true"><use href="#lg"/></svg><div><h1>DikChinho<span> Maps</span></h1><p data-i="tag"></p></div><button class="lang" id="lang">বাংলা</button><button class="lang" id="theme" title="Toggle dark mode" aria-label="Toggle dark mode">◐</button></div>
  <div class="body">
-  <div class="row"><button class="btn" id="navtoggle" style="flex:1" data-i="planroute">⇄ Plan a route</button></div>
-  <div id="navbox" hidden>
+  <div class="row"><strong data-i="planroute">⇄ Plan a route</strong></div>
+  <div id="navbox">
    <div class="row"><input id="fromq" type="search" autocomplete="off" data-ph="fromsearch"><button class="btn" id="frombtn" data-i="find"></button></div>
    <div class="row"><input id="toq" type="search" autocomplete="off" data-ph="tosearch"><button class="btn" id="tobtn" data-i="find"></button></div>
    <p class="note" id="navstatus"></p>
   </div>
-  <div class="hide-nav row"><input id="q" type="search" autocomplete="off" data-ph="search"><button class="btn" id="sbtn" data-i="go"></button></div>
   <div class="hide-nav" id="results"></div>
   <div class="hide-nav row"><button class="btn" id="me" data-i="me" style="flex:1"></button></div>
   <div class="hide-nav modes" id="modes"><button data-m="car" data-i="car"></button><button data-m="bike" data-i="bike"></button><button data-m="foot" data-i="foot"></button></div>
@@ -198,17 +197,14 @@ async function search(target='dest'){
  const center=map.getCenter(),ctr=[center.lat,center.lng],cm=q.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
  if(cm){let a=+cm[1],b=+cm[2];if(a>40)[a,b]=[b,a];renderPlaces([{lat:a,lon:b,name:t('pin'),display_name:a.toFixed(5)+', '+b.toFixed(5),type:'coordinates'}],q,target);return}
  $('#results').innerHTML='<p class="note">'+(T[S.lang].loading||'Searching…')+'</p>';
- const box=[center.lng-1,center.lat+1,center.lng+1,center.lat-1].join(','),safe=q.replace(/["\\\\]/g,' ').trim();
- const ov='[out:json][timeout:12];(nwr["name"~"'+safe.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'",i](around:35000,'+center.lat+','+center.lng+'););out center 12;';
+ const box='88.0,26.7,93.0,20.5';
  const jobs=[
- fetch(CFG.search+'?format=jsonv2&limit=10&addressdetails=1&accept-language=bn,en&viewbox='+box+'&bounded=0&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():[]).catch(()=>[]),
- fetch(CFG.photon+'?limit=15&lat='+center.lat+'&lon='+center.lng+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state,f.properties.country].filter(Boolean).join(', '),type:f.properties.osm_value||'',country:f.properties.countrycode||''}))).catch(()=>[]),
- safe.length>2?fetch(CFG.overpass+'?data='+encodeURIComponent(ov)).then(r=>r.ok?r.json():{elements:[]}).then(j=>(j.elements||[]).map(x=>({lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,name:x.tags?.['name:en']||x.tags?.name||'',display_name:[x.tags?.name,x.tags?.['addr:street'],x.tags?.['addr:city']].filter(Boolean).join(', '),type:x.tags?.amenity||x.tags?.shop||x.tags?.tourism||x.tags?.place||'',country:'bd'}))).catch(()=>[]):Promise.resolve([])
+ fetch(CFG.search+'?format=jsonv2&limit=8&addressdetails=1&accept-language=bn,en&countrycodes=bd&viewbox='+box+'&bounded=0&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():[]).catch(()=>[]),
+ fetch(CFG.photon+'?limit=10&lat='+center.lat+'&lon='+center.lng+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state,f.properties.country].filter(Boolean).join(', '),type:f.properties.osm_value||'',country:(f.properties.countrycode||'').toLowerCase()}))).catch(()=>[])
  ];
- if(CFG.barikoi.key)jobs.push(fetch(CFG.barikoi.url+'?api_key='+encodeURIComponent(CFG.barikoi.key)+'&bangla=true&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{}).then(j=>(j.places||[]).map(p=>({lat:+p.latitude,lon:+p.longitude,name:(bn()&&p.address_bn)||p.address||'',display_name:[p.address,p.area,p.city].filter(Boolean).join(', '),type:p.pType||'',country:'bd'}))).catch(()=>[]));
  const lists=await Promise.all(jobs),all=lists.flat().filter(p=>(p.name||p.display_name)&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)),seen=[],places=[];
  all.forEach(p=>{const ll=[+p.lat,+p.lon],key=String(p.name||p.display_name).toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();if(seen.some(x=>(x.key===key&&hav(x.ll,ll)<200)||hav(x.ll,ll)<25))return;seen.push({key,ll});places.push({...p,lat:ll[0],lon:ll[1],_d:hav(ctr,ll)})});
- const norm=v=>String(v||'').toLocaleLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();const z=norm(q);const score=p=>{const n=norm(p.name),d=norm(p.display_name);let v=0;if(n===z)v-=1000;if(d===z)v-=900;if(n.startsWith(z))v-=500;if(d.startsWith(z))v-=350;if(d.split(' ').some(w=>w===z))v-=180;if(p.country==='bd'||p.country==='BD')v-=80;if(/city|town|village|suburb|district|county|state|administrative/i.test(p.type||p.class||''))v+=120;return v+Math.min(p._d/1000,100)};places.sort((a,b)=>score(a)-score(b));
+ const norm=v=>String(v||'').toLocaleLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();const z=norm(q);const score=p=>{const n=norm(p.name),d=norm(p.display_name);let v=0;if(n===z)v-=1000;if(d===z)v-=900;if(n.startsWith(z))v-=500;if(d.startsWith(z))v-=350;if(d.split(' ').some(w=>w===z))v-=180;if(p.country==='bd'||p.country==='BD')v-=100;if(/city|town|village|suburb|district|county|state|administrative/i.test(p.type||p.class||''))v+=120;return v+Math.min(p._d/1000,100)};places.sort((a,b)=>score(a)-score(b));
  renderPlaces(places.slice(0,12),q,target)
 }
 function renderPlaces(places,q,target='dest'){
@@ -260,10 +256,9 @@ $('#sum').onclick=e=>{const id=e.target.id;
  if(id==='clr'){S.start=S.dest=null;S.routes=[];LR.clearLayers();pins();ui()}};
 $('#routes').onclick=e=>{const c=e.target.closest('[data-r]');if(c){S.sel=+c.dataset.r;drawRoutes();ui()}};
 $('#modes').onclick=e=>{const m=e.target.dataset.m;if(m){S.mode=m;plan()}};
-$('#sbtn').onclick=()=>search('map');$('#q').onkeydown=e=>{if(e.key==='Enter')search('map')};
 $('#frombtn').onclick=()=>search('start');$('#fromq').onkeydown=e=>{if(e.key==='Enter')search('start')};
 $('#tobtn').onclick=()=>search('dest');$('#toq').onkeydown=e=>{if(e.key==='Enter')search('dest')};
-$('#navtoggle').onclick=()=>{const box=$('#navbox');box.hidden=!box.hidden;$('#navtoggle').classList.toggle('on',!box.hidden);if(!box.hidden){$('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus()}};
+$('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus();
 
 $('#theme').onclick=()=>{S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);$('#theme').textContent=S.dark?'☀':'◐'};
 $('#me').onclick=locate;$('#go').onclick=()=>startNav(false);$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
