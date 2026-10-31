@@ -8,6 +8,7 @@
 <title>DikChinho Maps | Savar</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 256 256%22%3E%3Crect width=%22256%22 height=%22256%22 rx=%2258%22 fill=%22%23123b32%22/%3E%3Ccircle cx=%22128%22 cy=%22128%22 r=%2296%22 fill=%22none%22 stroke=%22%231d5a4b%22 stroke-width=%223%22/%3E%3Ccircle cx=%22128%22 cy=%22128%22 r=%2264%22 fill=%22none%22 stroke=%22%231d5a4b%22 stroke-width=%223%22/%3E%3Cpath d=%22M44 206C76 176 98 216 128 194%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%229%22 stroke-linecap=%22round%22 stroke-dasharray=%221 17%22/%3E%3Cpath d=%22M128 198C128 198 74 146 74 104a54 54 0 1 1 108 0c0 42-54 94-54 94z%22 fill=%22%23f2b134%22/%3E%3Ccircle cx=%22128%22 cy=%22104%22 r=%2224%22 fill=%22%23123b32%22/%3E%3Cpath d=%22M128 88l11 24-11-6-11 6z%22 fill=%22%23fff%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap">
 <style>
 :root{--g:#123b32;--gold:#f2b134;--bg:#fff;--ink:#14231f;--mute:#5e726b;--line:#dbe5e1;--chip:#e8f0ed;--bad:#d2402f}
@@ -88,11 +89,13 @@ body.closed #ui{transform:translateX(-104%)}body.closed #tog{left:12px}.navmode 
 </aside>
 <div id="toast" hidden></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
 <script>
 // ---------- Settings: swap these URLs when you host your own tiles, routing and search ----------
 const CFG={center:[23.8583,90.2667],zoom:13,
  tiles:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
- search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+ search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',style:'https://tiles.openfreemap.org/styles/liberty',photon:'https://photon.komoot.io/api/',overpass:'https://overpass-api.de/api/interpreter',barikoi:{key:'',url:'https://barikoi.xyz/v2/api/search/autocomplete/place'},sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
  route:{car:'https://routing.openstreetmap.de/routed-car/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'}};
 const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
 bn:{tag:'পথ চিনুন। জায়গা জানুন।',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'ডেমো ড্রাইভ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',bike:'বাইক',foot:'হাঁটা',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'দ্রুততম',alt:'বিকল্প',steps:'দিকনির্দেশনা',pin:'নির্বাচিত স্থান',hint:'টিপ: ম্যাপের যেকোনো জায়গায় ট্যাপ করে স্থানটি দেখুন ও পথ জানুন। পুরো ম্যাপ দেখতে ☰ চাপুন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। ইন্টারনেট দেখুন বা অন্য মাধ্যম বেছে নিন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস',pick:'জায়গা খুঁজুন বা ম্যাপে ট্যাপ করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
@@ -111,8 +114,11 @@ let wl=null;const lock=async()=>{try{wl=await navigator.wakeLock.request('screen
 // ---------- Map ----------
 const map=L.map('map',{zoomControl:false}).setView(CFG.center,CFG.zoom);
 L.control.zoom({position:'topright'}).addTo(map);
-const base=L.tileLayer(CFG.tiles,{subdomains:'abcd',maxZoom:20,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a> · Routing: OSRM'}).addTo(map);
+const base=L.tileLayer(CFG.tiles,{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · Routing: OSRM'});
 const imagery=L.tileLayer(CFG.sat,{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'});
+let vec=null;try{if(typeof L.maplibreGL==='function')vec=L.maplibreGL({style:CFG.style,attribution:'© <a href="https://openfreemap.org">OpenFreeMap</a> · Data © OpenStreetMap contributors'})}catch(e){}
+const LY={vector:vec,osm:base,sat:imagery},ORD=['vector','osm','sat'].filter(k=>LY[k]);let cur=null;
+function setLayer(k){if(cur&&LY[cur])map.removeLayer(LY[cur]);try{LY[k].addTo(map)}catch(e){k='osm';LY.osm.addTo(map)}cur=k;const names={vector:'🏙',osm:'🗺',sat:'🛰'};$('#lyr').textContent=names[ORD[(ORD.indexOf(k)+1)%ORD.length]]||'🗺'}
 const LR=L.layerGroup().addTo(map),LP=L.layerGroup().addTo(map);let meM=null;
 const pad=()=>innerWidth>760?{paddingTopLeft:[400,70],paddingBottomRight:[50,50]}:{paddingTopLeft:[24,90],paddingBottomRight:[24,Math.round(innerHeight*.5)]};
 const dot=(ll,c,r=9)=>L.circleMarker(ll,{radius:r,color:'#fff',weight:3,fillColor:c,fillOpacity:1}).addTo(LP);
@@ -124,27 +130,24 @@ function drawRoutes(){LR.clearLayers();
 // ---------- Search & routing ----------
 async function search(){
  const q=$('#q').value.trim();if(!q)return;
- $('#results').innerHTML='<p class="note">Searching…</p>';
- const enc=encodeURIComponent(q),c=map.getCenter(),box=[c.lng-.45,c.lat+.45,c.lng+.45,c.lat-.45].join(',');
- let places=[];
- // Try Nominatim first, with a location bias but without requiring a strict bounding box.
- try{
-  const u=`${CFG.search}?format=jsonv2&addressdetails=1&limit=8&countrycodes=bd&accept-language=${bn()?'bn':'en'}&q=${enc}`;
-  const r=await fetch(u);if(r.ok)places=await r.json();
- }catch(e){}
- // Photon often finds local businesses and place names that the first index misses.
- if(!places.length){try{
-  const r=await fetch(`https://photon.komoot.io/api/?q=${enc}&limit=8&lat=${c.lat}&lon=${c.lng}&lang=${bn()?'en':'en'}`);
-  if(r.ok){const j=await r.json();places=(j.features||[]).map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],display_name:[f.properties.name,f.properties.street,f.properties.district,f.properties.city,f.properties.state,f.properties.country].filter(Boolean).join(', '),name:f.properties.name||''}));}
- }catch(e){}}
- if(!places.length){
-  // One broad final search can recover results for a common place name.
-  try{const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=8&accept-language=en&q=${enc}%2C%20Bangladesh`);if(r.ok)places=await r.json()}catch(e){}
- }
- $('#results').innerHTML=places.length?places.map((p,i)=>`<div class="res" data-i="${i}"><span>${esc(p.display_name||p.name||q)}<small>${esc([p.type,p.class].filter(Boolean).join(' · '))}</small></span><button data-s="${i}">${t('setstart')}</button></div>`).join(''):`<p class="note">${t('nores')} Try a nearby landmark, area, or spelling variation.</p>`;
- $('#results').onclick=e=>{const b=e.target.closest('[data-s]'),d=e.target.closest('[data-i]');if(!d)return;const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||p.display_name.split(',')[0];
-  if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;
-  $('#results').innerHTML='';map.flyTo(ll,17);popup(ll,nm,p.display_name);if(b)setStart(ll,nm);else setDest(ll,nm)};
+ const center=map.getCenter(),ctr=[center.lat,center.lng],cm=q.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
+ if(cm){let a=+cm[1],b=+cm[2];if(a>40)[a,b]=[b,a];renderPlaces([{lat:a,lon:b,name:t('pin'),display_name:a.toFixed(5)+', '+b.toFixed(5),type:'coordinates'}],q);return}
+ $('#results').innerHTML='<p class="note">'+t('srch')+'</p>';
+ const box=[center.lng-1,center.lat+1,center.lng+1,center.lat-1].join(','),re=q.replace(/[^\p{L}\p{N} ]/gu,' ').trim();
+ const safe=re.replace(/["\\]/g,''),ov='[out:json][timeout:12];(nwr["name"~"'+safe+'",i](around:20000,'+center.lat+','+center.lng+'););out center 12;';
+ const jobs=[
+ fetch(CFG.search+'?format=jsonv2&limit=8&addressdetails=1&countrycodes=bd&accept-language=bn,en&viewbox='+box+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():[]).catch(()=>[]),
+ fetch(CFG.photon+'?limit=8&lat='+center.lat+'&lon='+center.lng+'&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{features:[]}).then(j=>(j.features||[]).filter(f=>!f.properties.countrycode||f.properties.countrycode==='BD').map(f=>({lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],name:f.properties.name||f.properties.street||'',display_name:[f.properties.name,f.properties.street,f.properties.district||f.properties.suburb,f.properties.city||f.properties.county,f.properties.state].filter(Boolean).join(', '),type:f.properties.osm_value||''}))).catch(()=>[]),
+ re.length>2?fetch(CFG.overpass+'?data='+encodeURIComponent(ov)).then(r=>r.ok?r.json():{elements:[]}).then(j=>(j.elements||[]).map(x=>({lat:x.lat??x.center?.lat,lon:x.lon??x.center?.lon,name:x.tags?.['name:en']||x.tags?.name||'',display_name:[x.tags?.name,x.tags?.['addr:street'],x.tags?.['addr:city']].filter(Boolean).join(', '),type:x.tags?.amenity||x.tags?.shop||x.tags?.tourism||x.tags?.place||''}))).catch(()=>[]):Promise.resolve([])
+ ];
+ if(CFG.barikoi.key)jobs.push(fetch(CFG.barikoi.url+'?api_key='+encodeURIComponent(CFG.barikoi.key)+'&bangla=true&q='+encodeURIComponent(q)).then(r=>r.ok?r.json():{}).then(j=>(j.places||[]).map(p=>({lat:+p.latitude,lon:+p.longitude,name:(bn()&&p.address_bn)||p.address||'',display_name:[p.address,p.area,p.city].filter(Boolean).join(', '),type:p.pType||''}))).catch(()=>[]));
+ const lists=await Promise.all(jobs),all=lists.flat().filter(p=>(p.name||p.display_name)&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lon)),seen=[],places=[];
+ all.forEach(p=>{const ll=[+p.lat,+p.lon],key=String(p.name||p.display_name).toLowerCase().replace(/[^\p{L}\p{N}]+/gu,' ').trim();if(seen.some(x=>(x.key===key&&hav(x.ll,ll)<200)||hav(x.ll,ll)<25))return;seen.push({key,ll});places.push({...p,lat:ll[0],lon:ll[1],_d:hav(ctr,ll)})});
+ const z=q.toLowerCase();places.sort((a,b)=>((String(a.name||a.display_name).toLowerCase().startsWith(z)?0:1)-(String(b.name||b.display_name).toLowerCase().startsWith(z)?0:1))||a._d-b._d);renderPlaces(places.slice(0,10),q)
+}
+function renderPlaces(places,q){
+ $('#results').innerHTML=places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span>'+esc(p.display_name||p.name||q)+'<small>'+esc(p.type||p.class||'')+'</small></span><button data-s="'+i+'">'+t('setstart')+'</button></div>').join(''):'<p class="note">'+t('nores')+'</p>';
+ $('#results').onclick=e=>{const b=e.target.closest('[data-s]'),d=e.target.closest('[data-i]');if(!d)return;const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||String(p.display_name||q).split(',')[0];if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;$('#results').innerHTML='';map.flyTo(ll,17);popup(ll,nm,p.display_name);if(b)setStart(ll,nm);else setDest(ll,nm)}
 }
 async function fetchRoutes(a,b){const r=await fetch(`${CFG.route[S.mode]}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`),j=await r.json();
  if(j.code!=='Ok')throw 0;return j.routes.map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R))}
@@ -210,7 +213,7 @@ function arrive(){const n=S.nav;n.done=true;clearInterval(n.tm);if(n.w!=null)nav
 function stopNav(){const n=S.nav;if(!n)return;clearInterval(n.tm);if(n.w!=null)navigator.geolocation.clearWatch(n.w);try{speechSynthesis.cancel()}catch(e){}try{wl&&wl.release()}catch(e){}
  S.nav=null;document.body.classList.remove('navmode');$('#banner').hidden=true;map.invalidateSize();if(S.routes[0])map.fitBounds(L.polyline(S.routes[S.sel].ll).getBounds(),pad())}
 $('#tog').onclick=()=>document.body.classList.toggle('closed');
-let sat=false;$('#lyr').onclick=()=>{sat=!sat;if(sat){imagery.addTo(map);map.removeLayer(base)}else{base.addTo(map);map.removeLayer(imagery)}$('#lyr').textContent=sat?'🗺':'🛰'};
+let sat=false;$('#lyr').onclick=()=>setLayer(ORD[(ORD.indexOf(cur)+1)%ORD.length]);setLayer(ORD[0]);
 $('#loc').onclick=locate;
 ui();
 </script>
