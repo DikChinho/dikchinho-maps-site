@@ -219,6 +219,21 @@ async function search(target='dest'){
  places.sort((a,b)=>a._score-b._score);
  renderPlaces(places.slice(0,12),q,target);
 }
+function renderPlaces(places,q,target='dest'){
+ const google='https://www.google.com/maps/search/'+encodeURIComponent(q);
+ $('#results').innerHTML=(places.length?places.map((p,i)=>'<div class="res" data-i="'+i+'"><span><b>'+esc(p.name||String(p.display_name||q).split(',')[0])+'</b><small>'+esc(p.display_name||'')+'</small></span><button data-pick="'+i+'">'+(target==='start'?t('from')+' ✓':t('to')+' ✓')+'</button></div>').join(''):'<p class="note">'+t('nores')+'</p>')+'<p class="note" style="padding:4px 2px">Not the exact place? <a href="'+google+'" target="_blank" rel="noopener">Search Google Maps</a> · You can also tap the exact point on the map.</p>';
+ $('#results').onclick=e=>{
+  const d=e.target.closest('[data-i]');if(!d)return;
+  const p=places[+d.dataset.i],ll=[+p.lat,+p.lon],nm=p.name||String(p.display_name||q).split(',')[0];
+  if(!Number.isFinite(ll[0])||!Number.isFinite(ll[1]))return;
+  $('#results').innerHTML='';
+  const kind=String(p.type||p.class||p.addresstype||'').toLowerCase();
+  const zoom=/city|town|village|district|county|state|administrative/.test(kind)?14:/road|street|house|building|address/.test(kind)?18:18;
+  map.flyTo(ll,zoom,{duration:0.8});
+  if(target==='start'){S.start=ll;S.startName=nm;$('#fromq').value=p.display_name||nm;pins();plan();navStatus()}
+  else {S.dest=ll;S.destName=nm;$('#toq').value=p.display_name||nm;pins();plan();navStatus()}
+ };
+}
 function navStatus(){const a=S.start?S.startName:'—',b=S.dest?S.destName:'—';$('#navstatus').textContent=t('from')+': '+a+' → '+t('to')+': '+b}
 
 async function fetchRoutes(a,b){const r=await fetch(`${CFG.route[S.mode]}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`),j=await r.json();
