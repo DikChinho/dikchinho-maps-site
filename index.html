@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#123b32">
-<meta name="description" content="DikChinho Maps: find places, plan routes and navigate with Bangla and English turn-by-turn directions. Starting in Savar, Bangladesh.">
+<meta name="description" content="DikChinho is a Bangladesh-first navigation platform, starting in Savar, with vehicle-aware routes and local road intelligence.">
+<link rel="manifest" href="./manifest.webmanifest">
 <title>DikChinho Maps | Savar</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 256 256%22%3E%3Crect width=%22256%22 height=%22256%22 rx=%2258%22 fill=%22%23123b32%22/%3E%3Ccircle cx=%22128%22 cy=%22128%22 r=%2296%22 fill=%22none%22 stroke=%22%231d5a4b%22 stroke-width=%223%22/%3E%3Ccircle cx=%22128%22 cy=%22128%22 r=%2264%22 fill=%22none%22 stroke=%22%231d5a4b%22 stroke-width=%223%22/%3E%3Cpath d=%22M44 206C76 176 98 216 128 194%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%229%22 stroke-linecap=%22round%22 stroke-dasharray=%221 17%22/%3E%3Cpath d=%22M128 198C128 198 74 146 74 104a54 54 0 1 1 108 0c0 42-54 94-54 94z%22 fill=%22%23f2b134%22/%3E%3Ccircle cx=%22128%22 cy=%22104%22 r=%2224%22 fill=%22%23123b32%22/%3E%3Cpath d=%22M128 88l11 24-11-6-11 6z%22 fill=%22%23fff%22/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
@@ -29,7 +30,7 @@ input{flex:1;min-width:0;padding:11px 12px;border:1px solid var(--line);border-r
 .btn{border:0;border-radius:10px;padding:10px 14px;cursor:pointer;background:var(--chip);font-weight:600}
 .pri{background:var(--gold);color:var(--g);font-weight:700;font-size:16px;padding:13px;width:100%}
 .pri:disabled{opacity:.4;cursor:default}.danger{background:var(--bad);color:#fff}
-.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.modes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.modes button{font-size:12px;min-height:54px}.pref-row{display:flex;align-items:center;gap:10px}.pref-row label{font-size:13px;font-weight:700;color:var(--mute)}.pref-row select{flex:1;min-width:0;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}.engine-note{font-size:11px;color:var(--mute);line-height:1.4}.report-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.report-head strong{font-size:14px}.report-list{display:flex;flex-direction:column;gap:6px}.report-item{display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:12px}.report-item b{display:block;font-size:13px}.report-item span{display:block;color:var(--mute)}.report-pin{font-size:17px;line-height:1.2}.report-tools{display:flex;flex-direction:column;gap:7px}.report-dialog{border:0;border-radius:16px;padding:0;max-width:min(92vw,430px);width:430px;background:var(--bg);color:var(--ink);box-shadow:0 20px 70px #0006}.report-dialog::backdrop{background:#071b17a6}.report-form{padding:18px;display:flex;flex-direction:column;gap:10px}.report-form h2{font-size:18px;margin:0}.report-form p{font-size:12px;color:var(--mute);margin:0}.report-form select,.report-form textarea{width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit}.report-form textarea{min-height:80px;resize:vertical}.report-actions{display:flex;gap:8px}.report-actions button{flex:1}
 .modes button{border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:8px 2px;cursor:pointer}
 .modes button.on{background:var(--g);color:#fff;border-color:var(--g);font-weight:600}
 .res{border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;display:flex;gap:8px;align-items:center;margin-bottom:6px}
@@ -117,7 +118,7 @@ body.closed #tog{left:16px}
 #map{background:#f4f6f4}
 .leaflet-control-zoom{border:0!important;box-shadow:0 2px 8px #0002!important}
 .leaflet-control-zoom a{border:0!important;color:#123b32!important}
-@media(max-width:760px){#ui{max-height:52vh;border-radius:16px}.body{gap:9px}}
+@media(max-width:760px){#ui{max-height:58vh;border-radius:16px}.body{gap:9px}.modes{grid-template-columns:repeat(3,minmax(0,1fr))}.modes button{font-size:13px;min-height:46px}.pref-row{align-items:stretch;flex-direction:column;gap:5px}}
 
 </style>
 </head>
@@ -138,7 +139,9 @@ body.closed #tog{left:16px}
   </div>
   <div class="hide-nav" id="results"></div>
   <div class="hide-nav row"><button class="btn" id="me" data-i="me" style="flex:1"></button></div>
-  <div class="hide-nav modes" id="modes"><button data-m="car" data-i="car"></button><button data-m="bike" data-i="bike"></button><button data-m="foot" data-i="foot"></button></div>
+  <div class="hide-nav modes" id="modes"><button data-m="car" data-i="car"></button><button data-m="motorcycle" data-i="motorcycle"></button><button data-m="scooter" data-i="scooter"></button><button data-m="bike" data-i="bike"></button><button data-m="foot" data-i="foot"></button></div>
+  <div class="hide-nav pref-row"><label for="routePreference" data-i="routeStyle">Route preference</label><select id="routePreference"><option value="balanced" data-i="balanced">Balanced</option><option value="shortest" data-i="shortest">Shortest distance</option><option value="avoid-tolls" data-i="avoidTolls">Avoid tolls</option><option value="avoid-highways" data-i="avoidHighways">Avoid highways</option></select></div>
+  <div class="hide-nav report-tools"><div class="report-head"><strong data-i="roadIntel">Road intelligence</strong><button class="btn" id="reportIssue" data-i="reportIssue">＋ Report issue</button></div><div class="report-list" id="reportList"></div><p class="engine-note" data-i="localOnly">Test mode: reports are saved only on this device, not shared with other users.</p><p class="engine-note">Routing: Valhalla community demo · map data © OpenStreetMap contributors</p></div>
   <div class="hide-nav sum" id="sum"></div>
   <div class="hide-nav" id="routes"></div>
   <div class="hide-nav row"><button class="btn pri" id="go" data-i="start"></button></div>
@@ -149,6 +152,7 @@ body.closed #tog{left:16px}
  </div>
 </aside>
 <div id="toast" hidden></div>
+<dialog class="report-dialog" id="issueDialog"><form class="report-form" id="issueForm"><h2 data-i="reportTitle">Report a road issue</h2><p id="reportLocation"></p><label for="issueKind" data-i="issueType">Issue type</label><select id="issueKind"><option value="congestion">Traffic congestion</option><option value="closure">Road closed</option><option value="construction">Road work</option><option value="waterlogging">Waterlogging</option><option value="crash">Accident</option><option value="pothole">Pothole / damaged road</option><option value="hazard">Other hazard</option></select><label for="issueSeverity" data-i="severity">Severity</label><select id="issueSeverity"><option value="1">Low</option><option value="2" selected>Moderate</option><option value="3">High</option></select><label for="issueNote" data-i="details">Details (optional)</label><textarea id="issueNote" maxlength="300" placeholder="Describe what other road users should know"></textarea><div class="report-actions"><button type="button" class="btn" id="cancelIssue" data-i="cancel">Cancel</button><button type="submit" class="btn pri" data-i="saveLocal">Save on this device</button></div><p class="engine-note" data-i="localOnly">Test mode: reports are saved only on this device, not shared with other users.</p></form></dialog>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
 <script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js"></script>
@@ -156,11 +160,11 @@ body.closed #tog{left:16px}
 // ---------- Settings: swap these URLs when you host your own tiles, routing and search ----------
 const CFG={center:[23.8583,90.2667],zoom:13,
  tiles:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
- search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',style:'https://tiles.openfreemap.org/styles/liberty',photon:'https://photon.komoot.io/api/',overpass:'https://overpass-api.de/api/interpreter',barikoi:{key:'',url:'https://barikoi.xyz/v2/api/search/autocomplete/place'},sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
- route:{car:'https://routing.openstreetmap.de/routed-car/route/v1/driving/',bike:'https://routing.openstreetmap.de/routed-bike/route/v1/driving/',foot:'https://routing.openstreetmap.de/routed-foot/route/v1/driving/'}};
-const T={en:{tag:'Find your way. Know your place.',search:'Search a place in Bangladesh',go:'Search',planroute:'⇄ Plan a route',find:'Find',fromsearch:'Starting point (e.g. home)',tosearch:'Destination (e.g. Dhaka airport)',me:'◎ My location',start:'Start navigation',demo:'Demo drive (no GPS needed)',stop:'End navigation',car:'Car',bike:'Bike',foot:'Walk',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Fastest',alt:'Alternative',steps:'Directions',pin:'Dropped pin',hint:'Tip: tap anywhere on the map to see the place and get directions. Use ☰ to hide this panel and see the full map.',noloc:'Location unavailable. Allow location access in your browser.',fail:'Could not get a route. Check your connection or try another mode.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice',pick:'Search a place or tap the map to start.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
-bn:{tag:'পথ চিনুন। জায়গা জানুন।',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',planroute:'⇄ পথ পরিকল্পনা',find:'খুঁজুন',fromsearch:'শুরুর স্থান (যেমন বাসা)',tosearch:'গন্তব্য (যেমন ঢাকা বিমানবন্দর)',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'ডেমো ড্রাইভ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',bike:'বাইক',foot:'হাঁটা',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'দ্রুততম',alt:'বিকল্প',steps:'দিকনির্দেশনা',pin:'নির্বাচিত স্থান',hint:'টিপ: ম্যাপের যেকোনো জায়গায় ট্যাপ করে স্থানটি দেখুন ও পথ জানুন। পুরো ম্যাপ দেখতে ☰ চাপুন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। ইন্টারনেট দেখুন বা অন্য মাধ্যম বেছে নিন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস',pick:'জায়গা খুঁজুন বা ম্যাপে ট্যাপ করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
-const S={lang:'en',voice:true,mode:'car',dark:false,start:null,startName:'',dest:null,destName:'',me:null,routes:[],sel:0,nav:null};
+ search:'https://nominatim.openstreetmap.org/search',reverse:'https://nominatim.openstreetmap.org/reverse',style:'https://tiles.openfreemap.org/styles/liberty',photon:'https://photon.komoot.io/api/',overpass:'https://overpass-api.de/api/interpreter',sat:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+ routeApi:'https://valhalla1.openstreetmap.de/route',routeClientId:'dikchinho.github.io'};
+const T={en:{tag:'Bangladesh-first navigation · Starting in Savar',search:'Search a place in Bangladesh',go:'Search',planroute:'⇄ Plan a route',find:'Find',fromsearch:'Starting point (or use My location)',tosearch:'Destination, landmark or building',me:'◎ My location',start:'Start navigation',demo:'Preview route (no GPS needed)',stop:'End navigation',car:'Car',motorcycle:'Motorcycle',scooter:'Scooter',bike:'Cycle',foot:'Walk',routeStyle:'Route preference',balanced:'Balanced',shortest:'Shortest distance',avoidTolls:'Avoid tolls',avoidHighways:'Avoid highways',roadIntel:'Road intelligence',reportIssue:'＋ Report issue',localOnly:'Test mode: reports are saved only on this device, not shared with other users.',reportTitle:'Report a road issue',issueType:'Issue type',severity:'Severity',details:'Details (optional)',cancel:'Cancel',saveLocal:'Save on this device',from:'From',to:'To',swap:'Swap',clear:'Clear',fast:'Recommended',alt:'Alternative',steps:'Turn-by-turn directions',pin:'Dropped pin',hint:'Search a destination, choose a travel mode and start navigation. You can also tap the map to set a start or destination.',noloc:'Location unavailable. Allow location access in your browser.',fail:'No route returned. Try another travel mode or destination.',nores:'No places found.',arrived:'You have arrived',rerouting:'Rerouting…',voice:'Voice guidance',pick:'Choose a destination to plan your route.',setstart:'Start',here:'Directions here',fromhere:'Start from here'},
+bn:{tag:'বাংলাদেশের জন্য নেভিগেশন · শুরু সাভার থেকে',search:'বাংলাদেশের যেকোনো জায়গা খুঁজুন',go:'খুঁজুন',planroute:'⇄ পথ পরিকল্পনা',find:'খুঁজুন',fromsearch:'শুরুর স্থান (অথবা আমার অবস্থান)',tosearch:'গন্তব্য, পরিচিত স্থান বা ভবনের নাম',me:'◎ আমার অবস্থান',start:'নেভিগেশন শুরু',demo:'রুট প্রিভিউ (জিপিএস লাগে না)',stop:'নেভিগেশন শেষ',car:'গাড়ি',motorcycle:'মোটরসাইকেল',scooter:'স্কুটার',bike:'সাইকেল',foot:'হাঁটা',routeStyle:'রুট পছন্দ',balanced:'ভারসাম্যপূর্ণ',shortest:'সবচেয়ে কম দূরত্ব',avoidTolls:'টোল এড়িয়ে',avoidHighways:'হাইওয়ে এড়িয়ে',roadIntel:'সড়ক পরিস্থিতি',reportIssue:'＋ সমস্যা জানান',localOnly:'পরীক্ষামূলক: রিপোর্ট শুধু এই ডিভাইসে থাকবে, অন্যদের সঙ্গে শেয়ার হবে না।',reportTitle:'সড়কের সমস্যা জানান',issueType:'সমস্যার ধরন',severity:'তীব্রতা',details:'বিস্তারিত (ঐচ্ছিক)',cancel:'বাতিল',saveLocal:'এই ডিভাইসে সংরক্ষণ',from:'শুরু',to:'গন্তব্য',swap:'বদল',clear:'মুছুন',fast:'প্রস্তাবিত',alt:'বিকল্প',steps:'টার্ন-বাই-টার্ন নির্দেশনা',pin:'নির্বাচিত স্থান',hint:'গন্তব্য খুঁজুন, যানবাহন নির্বাচন করুন এবং নেভিগেশন শুরু করুন। ম্যাপে ট্যাপ করে শুরুর স্থান বা গন্তব্যও নির্ধারণ করতে পারেন।',noloc:'অবস্থান পাওয়া যায়নি। ব্রাউজারে লোকেশনের অনুমতি দিন।',fail:'রুট পাওয়া যায়নি। অন্য যানবাহন বা গন্তব্য চেষ্টা করুন।',nores:'কোনো জায়গা পাওয়া যায়নি।',arrived:'আপনি গন্তব্যে পৌঁছে গেছেন',rerouting:'নতুন রুট খোঁজা হচ্ছে…',voice:'ভয়েস নির্দেশনা',pick:'রুটের জন্য একটি গন্তব্য নির্বাচন করুন।',setstart:'শুরু',here:'এখানে যাওয়ার পথ',fromhere:'এখান থেকে শুরু'}};
+const S={lang:'en',voice:true,mode:'car',preference:'balanced',dark:false,start:null,startName:'',dest:null,destName:'',me:null,routes:[],sel:0,nav:null,reporting:false,reportPoint:null,localReports:[]};
 const $=s=>document.querySelector(s),t=k=>T[S.lang][k]||k,bn=()=>S.lang==='bn';
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const num=x=>bn()?String(x).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]):String(x);
@@ -178,9 +182,9 @@ L.control.zoom({position:'topright'}).addTo(map);
 const base=L.tileLayer(CFG.tiles,{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> · Routing: OSRM'});
 const imagery=L.tileLayer(CFG.sat,{maxZoom:19,attribution:'Imagery © Esri, Maxar, Earthstar Geographics'});
 let vec=null;try{if(typeof L.maplibreGL==='function')vec=L.maplibreGL({style:CFG.style,attribution:'© <a href="https://openfreemap.org">OpenFreeMap</a> · Data © OpenStreetMap contributors'})}catch(e){}
-const LY={osm:base,sat:imagery};let cur=null;
+const LY={osm:vec||base,sat:imagery};let cur=null;
 function setLayer(k){if(cur&&LY[cur])map.removeLayer(LY[cur]);if(!LY[k])k='osm';LY[k].addTo(map);cur=k;$('#lyr').textContent=k==='osm'?'🛰':'🗺';$('#lyr').title=k==='osm'?'Switch to satellite':'Switch to street map'}
-const LR=L.layerGroup().addTo(map),LP=L.layerGroup().addTo(map);let meM=null;
+const LR=L.layerGroup().addTo(map),LP=L.layerGroup().addTo(map),incidentLayer=L.layerGroup().addTo(map);let meM=null;
 // Building footprints are loaded from OpenStreetMap when zoomed in close enough.
 const buildingLayer=L.layerGroup().addTo(map);let buildingTimer=null,buildingBusy=false,lastBuildingBox='';
 async function loadBuildings(){if(map.getZoom()<16){buildingLayer.clearLayers();lastBuildingBox='';return}if(buildingBusy)return;const b=map.getBounds(),box=[b.getSouth().toFixed(4),b.getWest().toFixed(4),b.getNorth().toFixed(4),b.getEast().toFixed(4)].join(',');if(box===lastBuildingBox)return;buildingBusy=true;try{const q='[out:json][timeout:10];way[building]('+box+');out geom;';const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),11000);const r=await fetch(CFG.overpass,{method:'POST',body:'data='+encodeURIComponent(q),headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},signal:ctl.signal});clearTimeout(timer);if(!r.ok)throw Error('building data unavailable');const j=await r.json();if(map.getZoom()<16)return;const fresh=L.layerGroup();for(const el of (j.elements||[])){if(!el.geometry||el.geometry.length<3)continue;const pts=el.geometry.map(p=>[p.lat,p.lon]);const tags=el.tags||{};L.polygon(pts,{color:'#718d81',weight:1,opacity:.8,fillColor:'#b9cfc0',fillOpacity:.45}).bindPopup('<b>'+esc(tags.name||tags['name:en']||tags['name:bn']||'Building')+'</b>'+(tags['addr:street']?'<br>'+esc(tags['addr:street']):'')+(tags.building?'<br><small>'+esc(tags.building)+'</small>':'')).addTo(fresh)}buildingLayer.clearLayers();fresh.addTo(buildingLayer);lastBuildingBox=box}catch(e){/* Keep the street map usable if the public building-data service is busy. */}finally{buildingBusy=false}}
@@ -238,14 +242,24 @@ function renderPlaces(places,q,target='dest'){
 }
 function navStatus(){const a=S.start?S.startName:'—',b=S.dest?S.destName:'—';$('#navstatus').textContent=t('from')+': '+a+' → '+t('to')+': '+b}
 
+const ROUTE_PROFILES={car:{costing:'auto'},motorcycle:{costing:'motorcycle'},scooter:{costing:'motor_scooter'},bike:{costing:'bicycle'},foot:{costing:'pedestrian'}};
+function routeRequest(a,b){
+ const profile=ROUTE_PROFILES[S.mode]||ROUTE_PROFILES.car,costing=profile.costing,opts={};
+ if(S.preference==='shortest')opts.shortest=true;
+ if(S.preference==='avoid-tolls'&&['auto','motorcycle','motor_scooter'].includes(costing))opts.use_tolls=0.05;
+ if(S.preference==='avoid-highways'&&['auto','motorcycle','motor_scooter'].includes(costing))opts.use_highways=0.1;
+ if(costing==='motorcycle')opts.use_trails=0;
+ if(costing==='motor_scooter')opts.use_primary=0.35;
+ const payload={locations:[{lat:a[0],lon:a[1],type:'break',name:S.startName||'Starting point',city:'Savar',state:'Dhaka',country:'Bangladesh'},{lat:b[0],lon:b[1],type:'break',name:S.destName||'Destination',city:'Savar',state:'Dhaka',country:'Bangladesh'}],costing,costing_options:Object.keys(opts).length?{[costing]:opts}:undefined,units:'kilometers',language:'en-US',format:'osrm',shape_format:'geojson',alternates:2,banner_instructions:true,voice_instructions:true,turn_lanes:true};
+ return payload
+}
 async function fetchRoutes(a,b){
- const base=CFG.route[S.mode],url=`${base}${a[1]},${a[0]};${b[1]},${b[0]}?overview=full&geometries=geojson&steps=true&alternatives=true`;
- const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),18000);
+ const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),20000);
  try{
-  const r=await fetch(url,{signal:ctl.signal});
-  if(!r.ok)throw new Error('Routing server HTTP '+r.status);
+  const r=await fetch(CFG.routeApi,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json','X-Client-Id':CFG.routeClientId},body:JSON.stringify(routeRequest(a,b)),signal:ctl.signal});
+  if(!r.ok){if(r.status===429)throw new Error('Routing demo rate limit reached. Please wait and retry.');throw new Error('Routing server HTTP '+r.status)}
   const j=await r.json();
-  if(j.code!=='Ok'||!Array.isArray(j.routes)||!j.routes.length)throw new Error(j.message||j.code||'No route returned');
+  if(j.code!=='Ok'||!Array.isArray(j.routes)||!j.routes.length)throw new Error(j.message||j.error||j.status_message||j.code||'No route returned');
   return j.routes.filter(R=>R.geometry&&Array.isArray(R.geometry.coordinates)&&R.geometry.coordinates.length>1&&R.legs&&R.legs[0]&&Array.isArray(R.legs[0].steps)).map(R=>(R.ll=R.geometry.coordinates.map(c=>[c[1],c[0]]),R)).filter(R=>R.ll.length>1);
  }finally{clearTimeout(timer)}
 }
@@ -258,9 +272,30 @@ function locate(){if(!navigator.geolocation)return toast(t('noloc'));navigator.g
 function popup(ll,name,addr){S.pop={ll,name};L.popup().setLatLng(ll).setContent(`<b>${esc(name)}</b><div style="color:#5e726b;font-size:12px;margin:2px 0 8px">${esc(addr||'')}</div><button class="btn pri" style="padding:8px;font-size:14px" onclick="popGo()">${t('here')}</button><button class="btn" style="margin-top:6px;width:100%" onclick="popFrom()">${t('fromhere')}</button>`).openOn(map)}
 function popGo(){map.closePopup();setDest(S.pop.ll,S.pop.name)}
 function popFrom(){map.closePopup();setStart(S.pop.ll,S.pop.name)}
-map.on('click',async e=>{if(S.nav)return;const ll=[e.latlng.lat,e.latlng.lng];popup(ll,t('pin'),ll.map(v=>v.toFixed(4)).join(', '));
+map.on('click',async e=>{if(S.nav)return;const ll=[e.latlng.lat,e.latlng.lng];if(S.reporting){S.reporting=false;S.reportPoint=ll;$('#reportLocation').textContent=ll[0].toFixed(5)+', '+ll[1].toFixed(5);$('#issueDialog').showModal();return}popup(ll,t('pin'),ll.map(v=>v.toFixed(4)).join(', '));
  try{const r=await fetch(`${CFG.reverse}?format=jsonv2&zoom=18&accept-language=bn,en&lat=${ll[0]}&lon=${ll[1]}`),j=await r.json();
   if(j.display_name&&S.pop&&S.pop.ll===ll){const q=j.display_name.split(',');popup(ll,j.name||q[0],q.slice(1,4).join(','))}}catch(x){}});
+// ---------- Local road reports (device-only prototype until a shared backend is connected) ----------
+const REPORT_KEY='dikchinho.local-road-reports.v1';
+const REPORT_META={congestion:{en:'Traffic congestion',bn:'যানজট',icon:'🚦',hours:4},closure:{en:'Road closed',bn:'রাস্তা বন্ধ',icon:'⛔',hours:12},construction:{en:'Road work',bn:'রাস্তার কাজ',icon:'🚧',hours:72},waterlogging:{en:'Waterlogging',bn:'জলাবদ্ধতা',icon:'🌊',hours:24},crash:{en:'Accident',bn:'দুর্ঘটনা',icon:'⚠️',hours:8},pothole:{en:'Pothole / damaged road',bn:'গর্ত / ক্ষতিগ্রস্ত রাস্তা',icon:'🕳️',hours:168},hazard:{en:'Other hazard',bn:'অন্যান্য ঝুঁকি',icon:'⚠️',hours:24}};
+function loadLocalRoadReports(){
+ try{const x=JSON.parse(localStorage.getItem(REPORT_KEY)||'[]');S.localReports=Array.isArray(x)?x.filter(r=>r&&r.expiresAt>Date.now()&&Number.isFinite(r.lat)&&Number.isFinite(r.lon)):[]}catch(e){S.localReports=[]}
+ renderLocalRoadReports();
+}
+function renderLocalRoadReports(){
+ incidentLayer.clearLayers();
+ const now=Date.now();S.localReports=S.localReports.filter(r=>r.expiresAt>now);
+ S.localReports.forEach(r=>{const meta=REPORT_META[r.kind]||REPORT_META.hazard;const marker=L.circleMarker([r.lat,r.lon],{radius:9,color:'#fff',weight:2,fillColor:r.severity===3?'#d64237':r.severity===2?'#e89b27':'#427cba',fillOpacity:1}).bindPopup('<b>'+esc(meta[S.lang])+'</b><br>'+esc(r.note||'')+'<br><small>'+new Date(r.createdAt).toLocaleString()+'</small>');marker.addTo(incidentLayer)});
+ const host=$('#reportList');if(!host)return;
+ host.innerHTML=S.localReports.length?S.localReports.slice().reverse().slice(0,4).map(r=>{const meta=REPORT_META[r.kind]||REPORT_META.hazard;return '<div class="report-item"><div class="report-pin">'+meta.icon+'</div><div><b>'+esc(meta[S.lang])+'</b><span>'+esc(r.note||'No extra details')+' · '+new Date(r.createdAt).toLocaleTimeString()+'</span></div></div>'}).join(''):'<p class="note">No local road reports yet.</p>';
+ try{localStorage.setItem(REPORT_KEY,JSON.stringify(S.localReports))}catch(e){}
+}
+$('#issueForm').addEventListener('submit',e=>{
+ e.preventDefault();if(!S.reportPoint){$('#issueDialog').close();return}
+ const kind=$('#issueKind').value,meta=REPORT_META[kind]||REPORT_META.hazard;
+ const r={id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),kind,severity:+$('#issueSeverity').value,note:$('#issueNote').value.trim().slice(0,300),lat:S.reportPoint[0],lon:S.reportPoint[1],createdAt:Date.now(),expiresAt:Date.now()+meta.hours*3600000};
+ S.localReports.push(r);S.reportPoint=null;$('#issueNote').value='';$('#issueDialog').close();renderLocalRoadReports();toast('Saved on this device only');
+});
 // ---------- Directions text ----------
 const DIR={en:{left:'Turn left','slight left':'Bear left','sharp left':'Turn sharp left',right:'Turn right','slight right':'Bear right','sharp right':'Turn sharp right',straight:'Continue straight',uturn:'Make a U-turn'},
 bn:{left:'বামে ঘুরুন','slight left':'একটু বামে যান','sharp left':'তীক্ষ্ণ বামে ঘুরুন',right:'ডানে ঘুরুন','slight right':'একটু ডানে যান','sharp right':'তীক্ষ্ণ ডানে ঘুরুন',straight:'সোজা যান',uturn:'ইউ-টার্ন নিন'}};
@@ -274,7 +309,7 @@ const glyph=s=>({arrive:'⚑',depart:'●',roundabout:'⟳',rotary:'⟳'}[s.mane
 // ---------- Panel ----------
 function ui(){document.querySelectorAll('[data-i]').forEach(e=>{if(!e.dataset.i.match(/^\d+$/))e.textContent=t(e.dataset.i)});
  document.querySelectorAll('[data-ph]').forEach(e=>e.placeholder=t(e.dataset.ph));
- $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#theme').textContent=S.dark?'☀':'◐';document.body.classList.toggle('dark',S.dark);$('#navtoggle').textContent=t('planroute');$('#frombtn').textContent=t('find');$('#tobtn').textContent=t('find');$('#fromq').placeholder=t('fromsearch');$('#toq').placeholder=t('tosearch');$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');
+ $('#lang').textContent=bn()?'English':'বাংলা';document.documentElement.lang=S.lang;$('#theme').textContent=S.dark?'☀':'◐';document.body.classList.toggle('dark',S.dark);$('#navtoggle').textContent=t('planroute');$('#frombtn').textContent=t('find');$('#tobtn').textContent=t('find');$('#fromq').placeholder=t('fromsearch');$('#toq').placeholder=t('tosearch');$('#vc').textContent=(S.voice?'🔊 ':'🔇 ')+t('voice');$('#routePreference').value=S.preference;
  document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
  const a=S.start?S.startName:S.me?t('me').slice(2):'—';
  $('#sum').innerHTML=S.dest||S.start?`<span>${t('from')}: <b>${esc(a)}</b> → ${t('to')}: <b>${esc(S.destName||'—')}</b></span><span><button class="btn" id="swp">⇅</button> <button class="btn" id="clr">✕</button></span>`:`<span>${t('pick')}</span>`;
@@ -286,6 +321,7 @@ $('#sum').onclick=e=>{const id=e.target.id;
  if(id==='clr'){S.start=S.dest=null;S.routes=[];LR.clearLayers();pins();ui()}};
 $('#routes').onclick=e=>{const c=e.target.closest('[data-r]');if(c){S.sel=+c.dataset.r;drawRoutes();ui()}};
 $('#modes').onclick=e=>{const m=e.target.dataset.m;if(m){S.mode=m;plan()}};
+$('#routePreference').onchange=e=>{S.preference=e.target.value;plan()};
 $('#frombtn').onclick=()=>search('start');$('#fromq').onkeydown=e=>{if(e.key==='Enter'){clearTimeout(autoSearchTimers.start);search('start')}};
 $('#tobtn').onclick=()=>search('dest');$('#toq').onkeydown=e=>{if(e.key==='Enter'){clearTimeout(autoSearchTimers.dest);search('dest')}};
 // Live suggestions: search after a short pause while typing, without requiring the Find button.
@@ -294,7 +330,8 @@ $('#toq').addEventListener('input',()=>{clearTimeout(autoSearchTimers.dest);cons
 $('#fromq').value=S.startName||'';$('#toq').value=S.destName||'';navStatus();
 
 $('#theme').onclick=()=>{S.dark=!S.dark;document.body.classList.toggle('dark',S.dark);$('#theme').textContent=S.dark?'☀':'◐'};
-$('#me').onclick=locate;$('#go').onclick=()=>{if(!S.dest)return toast(t('pick'));if(!S.routes.length){routeFromCurrentLocation();return}startNav(false)};$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
+$('#me').onclick=locate;$('#go').onclick=()=>{if(!S.dest)return toast(t('pick'));if(!S.routes.length){routeFromCurrentLocation();return}startNav(false)};
+$('#reportIssue').onclick=()=>{S.reporting=true;toast(bn()?'সমস্যার সঠিক স্থানে ম্যাপে ট্যাপ করুন':'Tap the exact road location on the map to report an issue')};$('#cancelIssue').onclick=()=>$('#issueDialog').close();$('#demo').onclick=()=>startNav(true);$('#stop').onclick=()=>stopNav();
 $('#vc').onclick=()=>{S.voice=!S.voice;if(!S.voice)try{speechSynthesis.cancel()}catch(e){}ui()};
 $('#lang').onclick=()=>{S.lang=bn()?'en':'bn';ui();if(S.nav&&!S.nav.done)onPos(S.me)};
 // ---------- Navigation ----------
@@ -322,6 +359,8 @@ $('#tog').onclick=()=>document.body.classList.toggle('closed');
 $('#lyr').onclick=()=>setLayer(cur==='osm'?'sat':'osm');setLayer('osm');
 $('#loc').onclick=locate;
 ui();
+loadLocalRoadReports();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 </script>
 </body>
 </html>
