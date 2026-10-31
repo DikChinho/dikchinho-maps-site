@@ -97,21 +97,24 @@
     }
     .map-actions button { font-size: 13px; }
     .map-actions button[aria-pressed="true"] { background: #b88622; color: #172e27; }
-    .tools {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 10px; margin-top: 14px;
+    .route-panel {
+      display: none; margin: 12px 0; padding: 16px;
+      background: white; border: 1px solid var(--border);
+      border-radius: 14px; box-shadow: 0 8px 24px #163b3210;
     }
-    .tool {
-      padding: 15px; background: white;
-      border: 1px solid var(--border); border-radius: 13px;
+    .route-panel.visible { display: block; }
+    .route-summary { font-weight: 750; font-size: 16px; margin-bottom: 10px; }
+    .route-steps { margin: 0; padding-left: 22px; }
+    .route-steps li { padding: 7px 0 7px 4px; line-height: 1.45; border-bottom: 1px solid #edf0ec; }
+    .route-steps li:last-child { border-bottom: 0; }
+    .map-credit {
+      display: inline-block; margin-top: 8px; padding: 4px 7px;
+      border-radius: 5px; background: #ffffffdd; color: #42534b;
+      font-size: 10px; line-height: 1.3;
     }
-    .tool strong { display: block; margin-bottom: 5px; font-size: 14px; }
-    .tool p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
-    .notice {
-      margin-top: 14px; padding: 12px 14px;
-      background: #fff7df; border: 1px solid #f1dfaa;
-      border-radius: 10px; font-size: 12px; line-height: 1.6;
-    }
+    .map-credit a { color: #245c4b; }
+    .leaflet-control-zoom a { color: var(--green) !important; border-color: #dce3dc !important; }
+    .leaflet-control-attribution { display: none !important; }
     .status { min-height: 24px; margin: 8px 0; font-size: 13px; color: var(--muted); }
     footer { text-align: center; padding: 22px 12px; color: var(--muted); font-size: 12px; }
     .leaflet-popup-content { line-height: 1.6; }
@@ -122,8 +125,8 @@
       .search { flex-wrap: wrap; }
       .search input { flex: 1 1 100%; }
       .search button { flex: 1; }
-      .tools { grid-template-columns: 1fr; }
-      #map { height: 55vh; min-height: 320px; }
+      #map { height: 62vh; min-height: 360px; }
+      .route-panel { padding: 13px; }
     }
   </style>
 </head>
@@ -141,8 +144,8 @@
 
   <main>
     <section class="intro">
-      <h2>Explore your surroundings</h2>
-      <p>Discover places, explore roads, and help improve local map information.</p>
+      <h2>Navigate with confidence</h2>
+      <p>Search for a place, locate yourself, and plan a driving route.</p>
     </section>
 
     <form id="searchForm" class="search">
@@ -167,47 +170,17 @@
       <div class="map-label">Savar · Bangladesh</div>
       <div id="map" aria-label="Interactive map of Savar"></div>
     </div>
-
-    <section class="tools">
-      <div class="tool">
-        <strong>Explore the map</strong>
-        <p>Move around the map and zoom in to inspect roads and nearby places.</p>
-      </div>
-      <div class="tool">
-        <strong>Find a location</strong>
-        <p>Search for a place or address. Search results depend on available map data.</p>
-      </div>
-      <div class="tool">
-        <strong>Report a map issue</strong>
-        <p>Select a location on the map to prepare a report with its coordinates.</p>
-      </div>
-    </section>
-
-    <section class="tool" style="margin-top:14px">
-      <strong>Report an incorrect or missing location</strong>
-      <p id="selectedLocation">First, tap a location on the map.</p>
-      <form id="reportForm" style="margin-top:12px">
-        <textarea id="reportText" rows="3" maxlength="1000"
-          placeholder="Describe the missing place or map issue…"
-          aria-label="Describe a map issue"></textarea>
-        <button type="submit" style="margin-top:10px">Prepare report</button>
-      </form>
-      <p id="reportStatus" class="status" role="status" aria-live="polite"></p>
-    </section>
-
-    <div class="notice">
-      <strong>Prototype notice:</strong> This is an early demonstration.
-      Search uses a public geocoding service and is intended only for limited
-      testing. Reports are not uploaded or saved to a server yet. Production
-      deployment requires a suitable search provider, usage-policy review,
-      and a secure backend for submitting reports.
+    <div class="map-credit">
+      Map data © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+      · Map style © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>
     </div>
+    <section id="routePanel" class="route-panel" aria-live="polite">
+      <div id="routeSummary" class="route-summary">Driving directions</div>
+      <ol id="routeSteps" class="route-steps"></ol>
+    </section>
   </main>
 
-  <footer>
-    DikChinho Maps · Savar-first mapping project<br>
-    Map data © OpenStreetMap contributors
-  </footer>
+  <footer>DikChinho Maps · Find your way. Know your place.</footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
@@ -219,21 +192,26 @@
     );
     const map = L.map("map", {
       minZoom: 7,
+      maxZoom: 20,
       maxBounds: bangladeshBounds,
-      maxBoundsViscosity: 0.8
+      maxBoundsViscosity: 0.8,
+      zoomControl: false,
+      attributionControl: false,
+      preferCanvas: true
     }).setView(savar, 13);
+    L.control.zoom({ position: "topright" }).addTo(map);
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+    // CARTO Voyager provides a cleaner road-and-label style.
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      subdomains: "abcd",
+      maxZoom: 20
     }).addTo(map);
 
     const status = document.getElementById("status");
     const searchResults = document.getElementById("searchResults");
-    const selectedLocation = document.getElementById("selectedLocation");
-    const reportStatus = document.getElementById("reportStatus");
-    let selectedPoint = null;
+    const routePanel = document.getElementById("routePanel");
+    const routeSummary = document.getElementById("routeSummary");
+    const routeSteps = document.getElementById("routeSteps");
     let selectedMarker = null;
     let resultMarker = null;
     let lastSearchAt = 0;
@@ -297,12 +275,11 @@
         if (resultMarker) map.removeLayer(resultMarker);
         resultMarker = L.marker(point).addTo(map)
           .bindPopup("Your current location · accuracy about " + Math.round(accuracy) + " m");
-        selectedPoint = L.latLng(point[0], point[1]);
         if (selectedMarker) map.removeLayer(selectedMarker);
-        selectedMarker = L.marker(selectedPoint).addTo(map);
-        selectedLocation.textContent = "Selected coordinates: " +
-          selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6) +
-          " · estimated accuracy ±" + Math.round(accuracy) + " m";
+        selectedMarker = L.circleMarker(point, {
+          radius: 8, color: "#ffffff", weight: 3,
+          fillColor: "#1674d1", fillOpacity: 1
+        }).addTo(map);
         // Zoom in moderately; a high zoom does not make an inaccurate reading precise.
         map.setView(point, accuracy <= 30 ? 17 : 15);
         status.textContent = "Current location updated. Estimated accuracy: ±" +
@@ -343,6 +320,8 @@
     function clearRoute() {
       if (routeLine) map.removeLayer(routeLine);
       routeLine = null;
+      routePanel.classList.remove("visible");
+      routeSteps.replaceChildren();
       routeMarkers.forEach(marker => map.removeLayer(marker));
       routeMarkers = [];
       routePoints = [];
@@ -358,7 +337,7 @@
       try {
         const coords = start.lng + "," + start.lat + ";" + end.lng + "," + end.lat;
         const url = "https://router.project-osrm.org/route/v1/driving/" + coords +
-          "?overview=full&geometries=geojson";
+          "?overview=full&geometries=geojson&steps=true";
         const response = await fetch(url);
         if (!response.ok) throw new Error("Routing service unavailable");
         const data = await response.json();
@@ -367,14 +346,30 @@
         }
         const route = data.routes[0];
         routeLine = L.geoJSON(route.geometry, {
-          style: { color: "#1769aa", weight: 6, opacity: 0.85 }
+          style: { color: "#1769aa", weight: 6, opacity: 0.9, lineCap: "round", lineJoin: "round" }
         }).addTo(map);
-        map.fitBounds(routeLine.getBounds(), { padding: [28, 28] });
+        map.fitBounds(routeLine.getBounds(), { padding: [36, 36] });
         const km = (route.distance / 1000).toFixed(1);
         const mins = Math.round(route.duration / 60);
-        status.textContent = "Driving route: " + km + " km · estimated " +
-          (mins >= 60 ? Math.floor(mins / 60) + " hr " + (mins % 60) + " min" : mins + " min") +
-          ". Estimates may differ from real traffic.";
+        const duration = mins >= 60 ? Math.floor(mins / 60) + " hr " + (mins % 60) + " min" : mins + " min";
+        routeSummary.textContent = "Driving route · " + km + " km · about " + duration;
+        routeSteps.replaceChildren();
+        const steps = (route.legs || []).flatMap(leg => leg.steps || []);
+        steps.forEach(function (step) {
+          const li = document.createElement("li");
+          li.textContent = describeStep(step);
+          const detail = document.createElement("small");
+          detail.textContent = " · " + (step.distance < 1000 ? Math.round(step.distance) + " m" : (step.distance / 1000).toFixed(1) + " km");
+          li.appendChild(detail);
+          routeSteps.appendChild(li);
+        });
+        if (!steps.length) {
+          const li = document.createElement("li");
+          li.textContent = "Follow the highlighted route to your destination.";
+          routeSteps.appendChild(li);
+        }
+        routePanel.classList.add("visible");
+        status.textContent = "Route ready. Directions use available road data; check road signs and actual traffic while driving.";
       } catch (error) {
         status.textContent = "Could not calculate a route. Try nearby points or try again later.";
       }
@@ -399,17 +394,8 @@
         drawRoute(start, end);
         return;
       }
-      selectedPoint = event.latlng;
-      if (selectedMarker) map.removeLayer(selectedMarker);
-
-      selectedMarker = L.marker(selectedPoint).addTo(map)
-        .bindPopup("Selected report location").openPopup();
-
-      const lat = selectedPoint.lat.toFixed(6);
-      const lng = selectedPoint.lng.toFixed(6);
-      selectedLocation.textContent = "Selected coordinates: " + lat + ", " + lng;
-      status.textContent = "Location selected. You can now prepare a map report.";
-      reportStatus.textContent = "";
+      status.textContent = "Map location: " + event.latlng.lat.toFixed(5) +
+        ", " + event.latlng.lng.toFixed(5) + ". Use search or Plan a route to continue.";
     });
 
     document.getElementById("searchForm").addEventListener("submit", async function (event) {
@@ -462,13 +448,12 @@
               .bindPopup("<strong>Search result</strong><br>" +
                 escapeHtml(result.display_name)).openPopup();
 
-            selectedPoint = L.latLng(point[0], point[1]);
             if (selectedMarker) map.removeLayer(selectedMarker);
-            selectedMarker = L.marker(selectedPoint).addTo(map);
-            selectedLocation.textContent = "Selected coordinates: " +
-              selectedPoint.lat.toFixed(6) + ", " + selectedPoint.lng.toFixed(6);
-            reportStatus.textContent = "";
-            status.textContent = "Place selected. You can prepare a report for this location.";
+            selectedMarker = L.circleMarker(point, {
+              radius: 8, color: "#ffffff", weight: 3,
+              fillColor: "#1674d1", fillOpacity: 1
+            }).addTo(map);
+            status.textContent = "Place selected on the map.";
           });
           searchResults.appendChild(resultButton);
         });
@@ -486,38 +471,31 @@
       status.textContent = "Map reset to Savar.";
     });
 
-    document.getElementById("reportForm").addEventListener("submit", function (event) {
-      event.preventDefault();
-      if (!selectedPoint) {
-        reportStatus.textContent = "Select a location on the map first.";
-        return;
+    function describeStep(step) {
+      const type = step.maneuver && step.maneuver.type;
+      const modifier = step.maneuver && step.maneuver.modifier;
+      const road = step.name ? " onto " + step.name : "";
+      const labels = {
+        depart: "Start",
+        arrive: "Arrive at your destination",
+        turn: "Turn",
+        "new name": "Continue",
+        continue: "Continue",
+        merge: "Merge",
+        "on ramp": "Take the ramp",
+        "off ramp": "Exit the ramp",
+        fork: "At the fork",
+        roundabout: "Enter the roundabout",
+        rotary: "Enter the rotary",
+        "end of road": "At the end of the road, turn",
+        uturn: "Make a U-turn"
+      };
+      let instruction = labels[type] || "Continue";
+      if (["turn", "fork", "end of road", "uturn"].includes(type) && modifier) {
+        instruction += " " + modifier.replace(/-/g, " ");
       }
-
-      const description = document.getElementById("reportText").value.trim();
-      if (!description) {
-        reportStatus.textContent = "Please describe the map issue.";
-        return;
-      }
-
-      const message = [
-        "DikChinho Maps issue report",
-        "Latitude: " + selectedPoint.lat.toFixed(6),
-        "Longitude: " + selectedPoint.lng.toFixed(6),
-        "Description: " + description
-      ].join("\n");
-
-      // No backend is connected yet; let the user copy the prepared report.
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(message).then(function () {
-          reportStatus.textContent =
-            "Report text copied. It has not been submitted to DikChinho.";
-        }).catch(function () {
-          window.prompt("Copy this report text:", message);
-        });
-      } else {
-        window.prompt("Copy this report text:", message);
-      }
-    });
+      return instruction + road;
+    }
 
     function escapeHtml(value) {
       return String(value).replace(/[&<>"']/g, function (char) {
